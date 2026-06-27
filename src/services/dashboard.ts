@@ -1,5 +1,7 @@
 import { DEFAULT_TARGET_ACCOUNTS } from "@/config/accounts";
+import { accountKey } from "@/lib/account-route";
 import { connectDB } from "@/lib/db";
+import { postUrlForPlatform } from "@/lib/format";
 import { Account } from "@/models/Account";
 import { Post } from "@/models/Post";
 import { ScrapeLog } from "@/models/ScrapeLog";
@@ -116,8 +118,11 @@ export async function getDashboardData(): Promise<DashboardData> {
       lastRefresh: null,
     };
 
-    const categoryByUsername = new Map(
-      DEFAULT_TARGET_ACCOUNTS.map((target) => [target.username, target.category ?? ""]),
+    const categoryByTarget = new Map(
+      DEFAULT_TARGET_ACCOUNTS.map((target) => [
+        accountKey(target.platform, target.username),
+        target.category ?? "",
+      ]),
     );
 
     const dashboardAccounts: DashboardAccount[] = accounts.map((account) => ({
@@ -125,39 +130,46 @@ export async function getDashboardData(): Promise<DashboardData> {
       platform: account.platform,
       displayName: account.displayName,
       followers: account.followers,
-      totalPosts: account.totalPosts,
+      totalPosts: Math.max(account.totalPosts, postCountByAccount.get(String(account._id)) ?? 0),
       scrapedPosts: postCountByAccount.get(String(account._id)) ?? 0,
       verified: account.verified,
       lastScrapedAt: account.lastScrapedAt,
-      category: categoryByUsername.get(account.username) ?? "",
+      category: categoryByTarget.get(accountKey(account.platform, account.username)) ?? "",
     }));
 
     const recentPostsRaw = await Post.find()
       .sort({ postedAt: -1 })
       .limit(15)
-      .populate<{ accountId: { username: string } | null }>("accountId", "username")
+      .populate<{ accountId: { username: string; platform: string } | null }>(
+        "accountId",
+        "username platform",
+      )
       .lean();
 
-    const recentPosts: DashboardPost[] = recentPostsRaw.map((post) => ({
-      id: String(post._id),
-      username:
+    const recentPosts: DashboardPost[] = recentPostsRaw.map((post) => {
+      const account =
         post.accountId && typeof post.accountId === "object" && "username" in post.accountId
-          ? post.accountId.username
-          : "unknown",
-      shortcode: post.shortcode,
-      type: post.type,
-      postedAt: post.postedAt,
-      likes: post.likes,
-      comments: post.comments,
-      views: post.views,
-      shares: post.shares,
-      postUrl:
-        post.shortcode && post.type === "reel"
-          ? `https://www.instagram.com/reel/${post.shortcode}/`
-          : post.shortcode
-            ? `https://www.instagram.com/p/${post.shortcode}/`
-            : "",
-    }));
+          ? post.accountId
+          : null;
+
+      return {
+        id: String(post._id),
+        username: account?.username ?? "unknown",
+        shortcode: post.shortcode,
+        type: post.type,
+        postedAt: post.postedAt,
+        likes: post.likes,
+        comments: post.comments,
+        views: post.views,
+        shares: post.shares,
+        postUrl: postUrlForPlatform(
+          post.platform ?? account?.platform ?? "instagram",
+          account?.username ?? "",
+          post.shortcode,
+          post.type,
+        ),
+      };
+    });
 
     const recentScrapesRaw = await ScrapeLog.find()
       .sort({ startedAt: -1 })

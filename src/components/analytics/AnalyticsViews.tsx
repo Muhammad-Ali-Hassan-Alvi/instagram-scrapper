@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { ViewAllPostsLink } from "@/components/analytics/PaginatedPostsTable";
+import { accountKey, accountLabel, accountPath, parseAccountKey, platformLabel } from "@/lib/account-route";
 import { formatDate, formatNumber } from "@/lib/format";
 import { ui } from "@/lib/ui-classes";
 import type { AnalyticsSnapshot, TopPostRow } from "@/types/analytics";
@@ -50,7 +51,7 @@ export function TopPostsTable({
           </thead>
           <tbody>
             {posts.slice(0, 5).map((post) => (
-              <tr key={`${post.username}-${post.shortcode}`} className={ui.tableRow}>
+              <tr key={`${post.platform}-${post.username}-${post.shortcode}`} className={ui.tableRow}>
                 <td className="px-4 py-2 text-slate-600">{formatDate(post.postedAt)}</td>
                 <td className="px-4 py-2 capitalize text-slate-600">{post.type}</td>
                 <td className="max-w-[200px] truncate px-4 py-2">
@@ -85,20 +86,30 @@ export function AccountSplitSections({ snapshot }: { snapshot: AnalyticsSnapshot
       <h2 className="text-lg font-semibold text-slate-900">Quick preview by account</h2>
       <div className="grid gap-4 xl:grid-cols-2">
         {snapshot.topPostsByAccount.map((slice) => {
-          const summary = snapshot.accountSummaries.find((row) => row.username === slice.username);
+          const summary = snapshot.accountSummaries.find(
+            (row) => row.username === slice.username && row.platform === slice.platform,
+          );
+          const sliceKey = accountKey(slice.platform, slice.username);
+
           return (
-            <div key={slice.username} className={`${ui.card} p-4`}>
+            <div key={sliceKey} className={`${ui.card} p-4`}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <Link href={`/accounts/${slice.username}`} className="text-lg font-semibold text-slate-900 hover:text-violet-700">
-                    @{slice.username}
+                  <Link
+                    href={accountPath(slice.platform, slice.username)}
+                    className="text-lg font-semibold text-slate-900 hover:text-violet-700"
+                  >
+                    {accountLabel(slice.platform, slice.username)}
                   </Link>
                   <p className="mt-1 text-sm text-slate-500">
                     {formatNumber(summary?.scrapedPosts ?? slice.kpis.totalPosts)} posts ·{" "}
                     {formatNumber(slice.kpis.totalEngagement)} engagement
                   </p>
                 </div>
-                <Link href={`/accounts/${slice.username}`} className={ui.btnPrimary}>
+                <Link
+                  href={accountPath(slice.platform, slice.username)}
+                  className={ui.btnPrimary}
+                >
                   Open
                 </Link>
               </div>
@@ -109,8 +120,15 @@ export function AccountSplitSections({ snapshot }: { snapshot: AnalyticsSnapshot
                 />
               </div>
               <div className="mt-3 flex flex-wrap gap-4 text-sm">
-                <ViewAllPostsLink account={slice.username} metric={snapshot.filters.metric} />
-                <a href={`/api/export?format=csv&account=${slice.username}`} className={ui.link}>
+                <ViewAllPostsLink
+                  platform={slice.platform}
+                  account={slice.username}
+                  metric={snapshot.filters.metric}
+                />
+                <a
+                  href={`/api/export?format=csv&account=${slice.username}&platform=${slice.platform}`}
+                  className={ui.link}
+                >
                   Download CSV
                 </a>
               </div>
@@ -123,10 +141,13 @@ export function AccountSplitSections({ snapshot }: { snapshot: AnalyticsSnapshot
 }
 
 export function ContentPerformanceCharts({ snapshot }: { snapshot: AnalyticsSnapshot }) {
-  const byAccount = snapshot.sharesByAccount.map((row) => ({
-    account: row.name,
-    engagement: row.value,
-  }));
+  const byAccount = snapshot.sharesByAccount.map((row) => {
+    const parsed = parseAccountKey(row.name);
+    return {
+      account: parsed ? accountLabel(parsed.platform, parsed.username) : row.name,
+      engagement: row.value,
+    };
+  });
 
   return (
     <div className={`${ui.card} p-4`}>
@@ -154,9 +175,9 @@ export function AudienceInsightsPanel({ snapshot }: { snapshot: AnalyticsSnapsho
         <h3 className="text-sm font-semibold text-slate-900">Followers by account</h3>
         <ul className="mt-4 space-y-2">
           {snapshot.accountSummaries.map((row) => (
-            <li key={row.username} className="flex justify-between text-sm">
-              <Link href={`/accounts/${row.username}`} className={ui.link}>
-                @{row.username}
+            <li key={accountKey(row.platform, row.username)} className="flex justify-between text-sm">
+              <Link href={accountPath(row.platform, row.username)} className={ui.link}>
+                {accountLabel(row.platform, row.username)}
               </Link>
               <span className="text-slate-500">
                 {formatNumber(row.followers)} followers · {formatNumber(row.scrapedPosts)} posts
@@ -173,7 +194,7 @@ export function PlatformBenchmarkPanel({ snapshot }: { snapshot: AnalyticsSnapsh
   const data = snapshot.platformComparison.map((row) => {
     const total = row.likes + row.comments + row.shares + row.saves || 1;
     return {
-      platform: row.platform,
+      platform: platformLabel(row.platform),
       likesPct: Number(((row.likes / total) * 100).toFixed(1)),
       commentsPct: Number(((row.comments / total) * 100).toFixed(1)),
       sharesPct: Number(((row.shares / total) * 100).toFixed(1)),

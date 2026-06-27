@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+import { accountLabel } from "@/lib/account-route";
 import { formatDate, formatNumber } from "@/lib/format";
 import { ui } from "@/lib/ui-classes";
 import type { AnalyticsFilters, PostsPageResult } from "@/types/analytics";
@@ -115,10 +116,15 @@ export function PaginatedPostsTable({
           </thead>
           <tbody>
             {rows.map((post, index) => (
-              <tr key={`${post.username}-${post.shortcode}`} className={ui.tableRow}>
+              <tr
+                key={`${post.platform}-${post.username}-${post.shortcode}`}
+                className={ui.tableRow}
+              >
                 <td className="px-4 py-2.5 text-slate-400">{start + index}</td>
                 {showAccount && (
-                  <td className="px-4 py-2.5 font-medium text-slate-900">@{post.username}</td>
+                  <td className="px-4 py-2.5 font-medium text-slate-900">
+                    {accountLabel(post.platform, post.username)}
+                  </td>
                 )}
                 <td className="px-4 py-2.5 text-slate-600">{formatDate(post.postedAt)}</td>
                 <td className="px-4 py-2.5 capitalize text-slate-600">{post.type}</td>
@@ -131,7 +137,7 @@ export function PaginatedPostsTable({
                       className={ui.link}
                       title={post.postUrl}
                     >
-                      {post.postUrl.replace("https://www.instagram.com/", "")}
+                      {post.postUrl.replace(/^https:\/\/(www\.)?/, "")}
                     </a>
                   ) : (
                     "—"
@@ -247,19 +253,21 @@ function buildPageNumbers(current: number, totalPages: number): (number | "…")
 }
 
 export function ViewAllPostsLink({
+  platform = "instagram",
   account,
   metric,
 }: {
+  platform?: string;
   account?: string;
   metric?: string;
 }) {
-  const params = new URLSearchParams();
+  const params = new URLSearchParams({ platform });
   if (metric) params.set("metric", metric);
   const query = params.toString();
 
   return (
     <Link
-      href={`/accounts/${account}${query ? `?${query}` : ""}`}
+      href={`/accounts/${account}?${query}`}
       className={ui.link}
     >
       View all posts →

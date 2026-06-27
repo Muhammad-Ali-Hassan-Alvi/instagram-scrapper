@@ -2,7 +2,7 @@ import type { Types } from "mongoose";
 
 import { Account, type AccountDocument } from "@/models/Account";
 import { Post, PostType } from "@/models/Post";
-import type { ScrapedPost, ScrapedProfile } from "@/scrapers/instagram/types";
+import type { ScrapedPost, ScrapedProfile } from "@/scrapers/shared/types";
 import { logger } from "@/utils/logger";
 
 function mapScrapedPostType(type: ScrapedPost["type"]): PostType {
@@ -93,7 +93,7 @@ export async function loadAllPostsForExport(): Promise<
     posts: Awaited<ReturnType<typeof Post.find>>;
   }>
 > {
-  const accounts = await Account.find({ platform: "instagram" }).sort({ username: 1 });
+  const accounts = await Account.find().sort({ platform: 1, username: 1 });
   const results = [];
 
   for (const account of accounts) {

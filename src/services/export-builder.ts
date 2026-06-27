@@ -2,11 +2,12 @@ import { mkdirSync, writeFileSync } from "fs";
 import { join } from "path";
 
 import { DEFAULT_TARGET_ACCOUNTS } from "@/config/accounts";
+import { accountKey } from "@/lib/account-route";
 import { connectDB } from "@/lib/db";
-import { instagramPostUrl } from "@/lib/format";
+import { postUrlForPlatform } from "@/lib/format";
 import type { PostDocument } from "@/models/Post";
 import type { AccountDocument } from "@/models/Account";
-import type { ScrapedPost } from "@/scrapers/instagram/types";
+import type { ScrapedPost } from "@/scrapers/shared/types";
 import { getIsoWeek } from "@/scrapers/instagram/parsers";
 import {
   CONSOLIDATED_EXPORT_COLUMNS,
@@ -71,7 +72,7 @@ export function postToConsolidatedRow(
     Platform: account.platform,
     Platform_ID: account.accountId,
     Post_ID: post.postId,
-    Post_URL: instagramPostUrl(post.shortcode, post.type),
+    Post_URL: postUrlForPlatform(account.platform, account.username, post.shortcode, post.type),
     Total_Engagement: engagement,
     ...emptyInsightsFields(),
     Views: post.views,
@@ -131,20 +132,26 @@ function sortRowsByEngagement(rows: ConsolidatedExportRow[]): ConsolidatedExport
 export async function buildConsolidatedExportRows(
   dataRefresh = new Date(),
   accountUsername?: string,
+  accountPlatform?: string,
 ): Promise<ConsolidatedExportRow[]> {
   await connectDB();
 
   const grouped = await loadAllPostsForExport();
-  const categoryByUsername = new Map(
-    DEFAULT_TARGET_ACCOUNTS.map((target) => [target.username, target.category ?? ""]),
+  const categoryByTarget = new Map(
+    DEFAULT_TARGET_ACCOUNTS.map((target) => [
+      accountKey(target.platform, target.username),
+      target.category ?? "",
+    ]),
   );
 
   const rows: ConsolidatedExportRow[] = [];
 
   for (const { account, posts } of grouped) {
     if (accountUsername && account.username !== accountUsername) continue;
+    if (accountPlatform && account.platform !== accountPlatform) continue;
 
-    const category = categoryByUsername.get(account.username) ?? "";
+    const category =
+      categoryByTarget.get(accountKey(account.platform, account.username)) ?? "";
 
     for (const post of posts) {
       rows.push(postToConsolidatedRow(account, post, category, dataRefresh));
@@ -159,10 +166,14 @@ export async function writePerAccountExportFiles(dataRefresh = new Date()): Prom
   mkdirSync(outDir, { recursive: true });
 
   const written: string[] = [];
-  for (const target of DEFAULT_TARGET_ACCOUNTS.filter((a) => a.platform === "instagram")) {
-    const rows = await buildConsolidatedExportRows(dataRefresh, target.username);
+  for (const target of DEFAULT_TARGET_ACCOUNTS) {
+    const rows = await buildConsolidatedExportRows(
+      dataRefresh,
+      target.username,
+      target.platform,
+    );
     if (!rows.length) continue;
-    const path = join(outDir, `${target.username}.csv`);
+    const path = join(outDir, `${target.platform}-${target.username}.csv`);
     writeFileSync(path, rowsToCsv(rows), "utf8");
     written.push(path);
   }

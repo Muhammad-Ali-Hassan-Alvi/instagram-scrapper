@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { DEFAULT_TARGET_ACCOUNTS } from "@/config/accounts";
+import { accountLabel, accountPath } from "@/lib/account-route";
 import { ui } from "@/lib/ui-classes";
 
 const NAV = [
@@ -13,8 +14,6 @@ const NAV = [
   { href: "/platform-benchmarking", label: "Benchmarking" },
   { href: "/exports", label: "Exports" },
 ] as const;
-
-const ACCOUNTS = DEFAULT_TARGET_ACCOUNTS.filter((account) => account.platform === "instagram");
 
 export function SidebarNav() {
   const pathname = usePathname();
@@ -48,12 +47,12 @@ export function SidebarNav() {
         Accounts
       </p>
       <nav className="mt-2 space-y-1">
-        {ACCOUNTS.map((account) => {
-          const href = `/accounts/${account.username}`;
-          const active = pathname === href;
+        {DEFAULT_TARGET_ACCOUNTS.map((account) => {
+          const href = accountPath(account.platform, account.username);
+          const active = pathname === `/accounts/${account.username}`;
           return (
             <Link
-              key={account.username}
+              key={`${account.platform}-${account.username}`}
               href={href}
               className={`block rounded-lg px-3 py-2 text-sm transition ${
                 active
@@ -61,7 +60,7 @@ export function SidebarNav() {
                   : "text-slate-600 hover:bg-slate-100"
               }`}
             >
-              @{account.username}
+              {accountLabel(account.platform, account.username)}
             </Link>
           );
         })}

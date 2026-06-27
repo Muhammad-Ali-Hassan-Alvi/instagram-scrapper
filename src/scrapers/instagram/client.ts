@@ -131,14 +131,30 @@ export class InstagramClient {
     let emptyStreak = 0;
     let rateLimitStreak = 0;
     const maxPages = Math.ceil(profile.totalPosts / 12) + 10;
+    const maxRateLimitRetries = 8;
 
-    while (pagesScraped < maxPages && emptyStreak < 3 && rateLimitStreak < 3) {
+    while (pagesScraped < maxPages && emptyStreak < 3 && rateLimitStreak < maxRateLimitRetries) {
       const url = `/api/v1/feed/user/${profile.accountId}/?count=12&max_id=${encodeURIComponent(maxId)}`;
       const result = await this.browserFetch<FeedUserResponse>(url);
       const payload = result.data;
 
       if (payload?.require_login || payload?.message?.includes("login")) {
-        logger.warn(`@${profile.username}: feed pagination requires login — ${payload?.message ?? ""}`);
+        const message = payload?.message ?? "";
+        const rateLimited =
+          message.toLowerCase().includes("wait") ||
+          message.toLowerCase().includes("try again") ||
+          message.toLowerCase().includes("limit");
+
+        if (rateLimited) {
+          rateLimitStreak++;
+          logger.warn(
+            `@${profile.username}: feed rate-limited (attempt ${rateLimitStreak}) — ${message || "retrying"}`,
+          );
+          await randomDelay(45000, 90000);
+          continue;
+        }
+
+        logger.warn(`@${profile.username}: feed pagination requires login — ${message}`);
         break;
       }
 
@@ -147,7 +163,7 @@ export class InstagramClient {
         logger.warn(
           `@${profile.username}: feed rate-limited (attempt ${rateLimitStreak}) — ${payload?.message ?? "retrying"}`,
         );
-        await randomDelay(8000, 15000);
+        await randomDelay(45000, 90000);
         continue;
       }
 

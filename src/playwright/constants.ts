@@ -6,3 +6,7 @@ export const USER_AGENT =
 export const INSTAGRAM_SESSION_PATH = ".auth/instagram-session.json";
 
 export const INSTAGRAM_BASE_URL = "https://www.instagram.com";
+
+export const TIKTOK_SESSION_PATH = ".auth/tiktok-session.json";
+
+export const TIKTOK_BASE_URL = "https://www.tiktok.com";

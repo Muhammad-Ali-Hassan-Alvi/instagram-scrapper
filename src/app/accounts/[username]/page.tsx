@@ -6,17 +6,11 @@ import { loadAnalyticsSnapshot } from "@/lib/load-analytics-snapshot";
 import { ContentPerformanceCharts } from "@/components/analytics/AnalyticsViews";
 import { PaginatedPostsTable } from "@/components/analytics/PaginatedPostsTable";
 import { KpiStrip } from "@/components/analytics/KpiStrip";
-import { DEFAULT_TARGET_ACCOUNTS } from "@/config/accounts";
+import { accountKey, isTargetAccount, platformLabel } from "@/lib/account-route";
 import { formatNumber } from "@/lib/format";
 import { ui } from "@/lib/ui-classes";
 
 export const dynamic = "force-dynamic";
-
-const VALID_USERNAMES = new Set(
-  DEFAULT_TARGET_ACCOUNTS.filter((account) => account.platform === "instagram").map(
-    (account) => account.username,
-  ),
-);
 
 export default async function AccountDashboardPage({
   params,
@@ -26,15 +20,19 @@ export default async function AccountDashboardPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const { username } = await params;
+  const rawParams = await searchParams;
   const normalized = username.toLowerCase();
+  const platform = rawParams.platform === "tiktok" ? "tiktok" : "instagram";
 
-  if (!VALID_USERNAMES.has(normalized)) {
+  if (!isTargetAccount(platform, normalized)) {
     notFound();
   }
 
-  const rawParams = await searchParams;
-  const snapshot = await loadAnalyticsSnapshot({ ...rawParams, account: normalized });
-  const summary = snapshot.accountSummaries.find((row) => row.username === normalized);
+  const accountFilter = accountKey(platform, normalized);
+  const snapshot = await loadAnalyticsSnapshot({ ...rawParams, account: accountFilter });
+  const summary = snapshot.accountSummaries.find(
+    (row) => row.username === normalized && row.platform === platform,
+  );
 
   return (
     <AnalyticsPageFrame title={`@${normalized}`} snapshot={snapshot}>
@@ -42,14 +40,20 @@ export default async function AccountDashboardPage({
         <div className={`${ui.card} p-4`}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className={ui.label}>Account dashboard</p>
+              <p className={ui.label}>{platformLabel(platform)} account dashboard</p>
               <h2 className="text-2xl font-semibold text-slate-900">@{normalized}</h2>
             </div>
             <div className="flex flex-wrap gap-2">
-              <a href={`/api/export?format=csv&account=${normalized}`} className={ui.btn}>
+              <a
+                href={`/api/export?format=csv&account=${normalized}&platform=${platform}`}
+                className={ui.btn}
+              >
                 Export CSV
               </a>
-              <a href={`/api/export?format=pdf&account=${normalized}`} className={ui.btn}>
+              <a
+                href={`/api/export?format=pdf&account=${normalized}&platform=${platform}`}
+                className={ui.btn}
+              >
                 Export PDF
               </a>
             </div>
@@ -62,11 +66,11 @@ export default async function AccountDashboardPage({
               {summary.totalPosts > 0 && (
                 <>
                   {" "}
-                  of {formatNumber(summary.totalPosts)} on Instagram
+                  of {formatNumber(summary.totalPosts)} on {platformLabel(platform)}
                   {summary.scrapedPosts < summary.totalPosts && (
                     <span className="text-amber-700">
                       {" "}
-                      — run scrape to load the rest
+                      — run scrape or Apify import to load the rest
                     </span>
                   )}
                 </>
@@ -88,8 +92,8 @@ export default async function AccountDashboardPage({
           <PaginatedPostsTable
             postsPage={snapshot.postsPage}
             filters={snapshot.filters}
-            title={`All posts — @${normalized}`}
-            basePath={`/accounts/${normalized}`}
+            title={`All posts — ${platformLabel(platform)} @${normalized}`}
+            basePath={`/accounts/${normalized}?platform=${platform}`}
           />
         </Suspense>
       </div>

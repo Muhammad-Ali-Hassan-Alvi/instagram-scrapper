@@ -29,7 +29,6 @@ const accountSchema = new Schema<AccountDocument>(
     username: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
       lowercase: true,
     },
@@ -83,6 +82,8 @@ const accountSchema = new Schema<AccountDocument>(
     timestamps: true,
   },
 );
+
+accountSchema.index({ username: 1, platform: 1 }, { unique: true });
 
 // TODO: Add virtual populate for posts once Post queries are implemented.
 

@@ -5,6 +5,7 @@ import { AnalyticsPageFrame } from "@/components/analytics/AnalyticsPageFrame";
 import { loadAnalyticsSnapshot } from "@/lib/load-analytics-snapshot";
 import { PaginatedPostsTable } from "@/components/analytics/PaginatedPostsTable";
 import { DEFAULT_TARGET_ACCOUNTS } from "@/config/accounts";
+import { accountLabel, accountPath, parseAccountKey } from "@/lib/account-route";
 import { ui } from "@/lib/ui-classes";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +16,9 @@ export default async function ContentPerformancePage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const snapshot = await loadAnalyticsSnapshot(searchParams);
-  const accounts = DEFAULT_TARGET_ACCOUNTS.filter((account) => account.platform === "instagram");
+  const selectedAccount = snapshot.filters.account;
+  const selectedParsed =
+    selectedAccount !== "all" ? parseAccountKey(selectedAccount) : null;
 
   return (
     <AnalyticsPageFrame title="All Posts" snapshot={snapshot}>
@@ -25,9 +28,13 @@ export default async function ContentPerformancePage({
             Browse posts across accounts, or open a dedicated dashboard for one account.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
-            {accounts.map((account) => (
-              <Link key={account.username} href={`/accounts/${account.username}`} className={ui.btnPrimary}>
-                @{account.username}
+            {DEFAULT_TARGET_ACCOUNTS.map((account) => (
+              <Link
+                key={`${account.platform}-${account.username}`}
+                href={accountPath(account.platform, account.username)}
+                className={ui.btnPrimary}
+              >
+                {accountLabel(account.platform, account.username)}
               </Link>
             ))}
           </div>
@@ -45,9 +52,9 @@ export default async function ContentPerformancePage({
             filters={snapshot.filters}
             showAccount={snapshot.filters.account === "all"}
             title={
-              snapshot.filters.account === "all"
-                ? "All posts (combined)"
-                : `All posts — @${snapshot.filters.account}`
+              selectedParsed
+                ? `All posts — ${accountLabel(selectedParsed.platform, selectedParsed.username)}`
+                : "All posts (combined)"
             }
           />
         </Suspense>

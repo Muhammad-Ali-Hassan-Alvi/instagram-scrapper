@@ -9,6 +9,12 @@ const envSchema = z.object({
   MONGO_URI: z.string().min(1).optional(),
   INSTAGRAM_USERNAME: z.string().min(1).optional(),
   INSTAGRAM_PASSWORD: z.string().min(1).optional(),
+  INSTAGRAM_EMAIL_CODE: z.string().min(4).max(12).optional(),
+  INSTAGRAM_SESSION_ONLY: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((v) => v === "true")
+    .default(false),
   TIKTOK_USERNAME: z.string().min(1).optional(),
   TIKTOK_PASSWORD: z.string().min(1).optional(),
   SCRAPE_HEADLESS: z
@@ -75,4 +81,9 @@ export function getEnv(): Env {
 export function hasInstagramCredentials(): boolean {
   const env = getEnv();
   return Boolean(env.INSTAGRAM_USERNAME && env.INSTAGRAM_PASSWORD);
+}
+
+export function hasTikTokCredentials(): boolean {
+  const env = getEnv();
+  return Boolean(env.TIKTOK_USERNAME && env.TIKTOK_PASSWORD);
 }

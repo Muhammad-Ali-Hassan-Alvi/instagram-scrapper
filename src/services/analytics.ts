@@ -1,5 +1,7 @@
 import { DEFAULT_TARGET_ACCOUNTS } from "@/config/accounts";
+import { accountKey, parseAccountKey } from "@/lib/account-route";
 import { connectDB } from "@/lib/db";
+import { postUrlForPlatform } from "@/lib/format";
 import { Account } from "@/models/Account";
 import { Post } from "@/models/Post";
 import type { Platform } from "@/types";
@@ -14,7 +16,6 @@ import {
   type AccountAnalyticsSlice,
   type PostsPageResult,
 } from "@/types/analytics";
-import { instagramPostUrl } from "@/lib/format";
 import { postEngagement } from "@/types/consolidated-export";
 
 function parseFilters(searchParams: Record<string, string | undefined>): AnalyticsFilters {
@@ -40,7 +41,8 @@ function parseFilters(searchParams: Record<string, string | undefined>): Analyti
 }
 
 function mapPostRow(post: {
-  account?: { username?: string };
+  platform?: string;
+  account?: { username?: string; platform?: string };
   shortcode?: string;
   type?: string;
   postedAt: Date | string;
@@ -51,8 +53,12 @@ function mapPostRow(post: {
   saves?: number;
   engagement?: number;
 }): TopPostRow {
+  const platform = post.account?.platform ?? post.platform ?? "instagram";
+  const username = post.account?.username ?? "unknown";
+
   return {
-    username: post.account?.username ?? "unknown",
+    platform,
+    username,
     shortcode: post.shortcode ?? "",
     type: post.type ?? "",
     postedAt: new Date(post.postedAt).toISOString(),
@@ -69,7 +75,7 @@ function mapPostRow(post: {
         shares: post.shares ?? 0,
         saves: post.saves ?? 0,
       }),
-    postUrl: instagramPostUrl(post.shortcode ?? "", post.type ?? ""),
+    postUrl: postUrlForPlatform(platform, username, post.shortcode ?? "", post.type ?? ""),
   };
 }
 
@@ -104,7 +110,9 @@ function emptySnapshot(filters: AnalyticsFilters, error?: string): AnalyticsSnap
     postsPage: { rows: [], total: 0, page: 1, pageSize: 25, totalPages: 0 },
     topPostsByAccount: [],
     availableYears: [],
-    availableAccounts: DEFAULT_TARGET_ACCOUNTS.map((a) => a.username),
+    availableAccounts: DEFAULT_TARGET_ACCOUNTS.map((account) =>
+      accountKey(account.platform, account.username),
+    ),
     accountSummaries: [],
     lastDataRefresh: null,
     insightsNote:
@@ -128,9 +136,12 @@ async function buildPostMatch(filters: AnalyticsFilters): Promise<Record<string,
   }
 
   if (filters.account !== "all") {
-    const account = await Account.findOne({
-      username: filters.account.toLowerCase(),
-    })
+    const parsed = parseAccountKey(filters.account);
+    const account = await Account.findOne(
+      parsed
+        ? { username: parsed.username, platform: parsed.platform as Platform }
+        : { username: filters.account.toLowerCase() },
+    )
       .select("_id")
       .lean();
     if (account) {
@@ -159,8 +170,11 @@ export async function getAnalyticsSnapshot(
 
   try {
     const match = await buildPostMatch(filters);
-    const categoryByUsername = new Map(
-      DEFAULT_TARGET_ACCOUNTS.map((target) => [target.username, target.category ?? "Other"]),
+    const categoryByTarget = new Map(
+      DEFAULT_TARGET_ACCOUNTS.map((target) => [
+        accountKey(target.platform, target.username),
+        target.category ?? "Other",
+      ]),
     );
 
     const [totals] = await Post.aggregate<{
@@ -267,6 +281,7 @@ export async function getAnalyticsSnapshot(
     ]);
 
     const engagementByAccountRaw = await Post.aggregate<{
+      platform: string;
       username: string;
       engagement: number;
     }>([
@@ -282,19 +297,29 @@ export async function getAnalyticsSnapshot(
       { $unwind: "$account" },
       {
         $group: {
-          _id: "$account.username",
+          _id: {
+            platform: "$account.platform",
+            username: "$account.username",
+          },
           engagement: {
             $sum: { $add: ["$likes", "$comments", "$shares", "$saves"] },
           },
         },
       },
-      { $project: { _id: 0, username: "$_id", engagement: 1 } },
+      {
+        $project: {
+          _id: 0,
+          platform: "$_id.platform",
+          username: "$_id.username",
+          engagement: 1,
+        },
+      },
     ]);
 
     const totalEngagementForPct =
       engagementByAccountRaw.reduce((sum, row) => sum + row.engagement, 0) || 1;
     const sharesByAccount = engagementByAccountRaw.map((row) => ({
-      name: row.username,
+      name: accountKey(row.platform, row.username),
       value: row.engagement,
       percentage: Number(((row.engagement / totalEngagementForPct) * 100).toFixed(1)),
     }));
@@ -307,6 +332,7 @@ export async function getAnalyticsSnapshot(
     const weeklyRaw = await Post.aggregate<{
       week: number;
       year: number;
+      platform: string;
       username: string;
       value: number;
     }>([
@@ -325,6 +351,7 @@ export async function getAnalyticsSnapshot(
           _id: {
             year: { $isoWeekYear: "$postedAt" },
             week: { $isoWeek: "$postedAt" },
+            platform: "$account.platform",
             username: "$account.username",
           },
           value: { $sum: metricSumExpression },
@@ -335,6 +362,7 @@ export async function getAnalyticsSnapshot(
           _id: 0,
           year: "$_id.year",
           week: "$_id.week",
+          platform: "$_id.platform",
           username: "$_id.username",
           value: 1,
         },
@@ -345,7 +373,9 @@ export async function getAnalyticsSnapshot(
 
     const weeklyByCategory = weeklyRaw.map((row) => ({
       week: `W${row.week}`,
-      category: categoryByUsername.get(row.username) ?? row.username,
+      category:
+        categoryByTarget.get(accountKey(row.platform, row.username)) ??
+        accountKey(row.platform, row.username),
       value: row.value,
     }));
 
@@ -433,9 +463,14 @@ export async function getAnalyticsSnapshot(
 
     const topPostsByAccount: AccountAnalyticsSlice[] = [];
     if (filters.account === "all") {
-      for (const target of DEFAULT_TARGET_ACCOUNTS.filter((a) => a.platform === "instagram")) {
+      for (const target of DEFAULT_TARGET_ACCOUNTS) {
         const accountMatch = { ...match };
-        const accountDoc = await Account.findOne({ username: target.username }).select("_id").lean();
+        const accountDoc = await Account.findOne({
+          username: target.username,
+          platform: target.platform,
+        })
+          .select("_id")
+          .lean();
         if (!accountDoc) continue;
         accountMatch.accountId = accountDoc._id;
 
@@ -464,9 +499,13 @@ export async function getAnalyticsSnapshot(
         };
         const acctEngagement =
           acctSummary.likes + acctSummary.comments + acctSummary.shares + acctSummary.saves;
-        const acctAccount = accounts.find((a) => a.username === target.username);
+        const acctAccount = accounts.find(
+          (account) =>
+            account.username === target.username && account.platform === target.platform,
+        );
 
         topPostsByAccount.push({
+          platform: target.platform,
           username: target.username,
           kpis: {
             totalPosts: acctSummary.count,
@@ -505,10 +544,11 @@ export async function getAnalyticsSnapshot(
     );
 
     const accountSummaries = accounts.map((account) => ({
+      platform: account.platform,
       username: account.username,
       followers: account.followers,
       scrapedPosts: postCountByAccount.get(String(account._id)) ?? 0,
-      totalPosts: account.totalPosts,
+      totalPosts: Math.max(account.totalPosts, postCountByAccount.get(String(account._id)) ?? 0),
     }));
 
     const kpis: AnalyticsKpis = {
@@ -545,7 +585,9 @@ export async function getAnalyticsSnapshot(
       postsPage,
       topPostsByAccount,
       availableYears: yearsRaw.map((y) => y._id),
-      availableAccounts: DEFAULT_TARGET_ACCOUNTS.map((a) => a.username),
+      availableAccounts: DEFAULT_TARGET_ACCOUNTS.map((account) =>
+        accountKey(account.platform, account.username),
+      ),
       accountSummaries,
       lastDataRefresh,
       insightsNote:

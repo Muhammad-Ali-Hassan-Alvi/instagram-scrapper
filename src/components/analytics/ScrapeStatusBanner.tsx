@@ -1,11 +1,17 @@
 "use client";
 
+import { accountKey, platformLabel } from "@/lib/account-route";
 import { formatNumber } from "@/lib/format";
 
 export function ScrapeStatusBanner({
   accounts,
 }: {
-  accounts: { username: string; scrapedPosts: number; totalPosts: number }[];
+  accounts: {
+    platform: string;
+    username: string;
+    scrapedPosts: number;
+    totalPosts: number;
+  }[];
 }) {
   const incomplete = accounts.filter(
     (account) => account.totalPosts > 0 && account.scrapedPosts < account.totalPosts,
@@ -25,8 +31,8 @@ export function ScrapeStatusBanner({
       {incomplete.length > 0 && (
         <ul className="mt-2 space-y-1 text-sm text-amber-900">
           {incomplete.map((account) => (
-            <li key={account.username}>
-              @{account.username}: {formatNumber(account.scrapedPosts)} /{" "}
+            <li key={accountKey(account.platform, account.username)}>
+              {platformLabel(account.platform)} @{account.username}: {formatNumber(account.scrapedPosts)} /{" "}
               {formatNumber(account.totalPosts)} posts in DB
             </li>
           ))}
@@ -39,6 +45,12 @@ export function ScrapeStatusBanner({
       <div className="mt-3 flex flex-wrap gap-2">
         <code className="rounded bg-amber-100 px-2 py-2 text-xs text-amber-950">
           npm run scrape:instagram
+        </code>
+        <code className="rounded bg-amber-100 px-2 py-2 text-xs text-amber-950">
+          npm run scrape:tiktok
+        </code>
+        <code className="rounded bg-amber-100 px-2 py-2 text-xs text-amber-950">
+          npm run tiktok:import-apify
         </code>
         <code className="rounded bg-amber-100 px-2 py-2 text-xs text-amber-950">
           npm run cron

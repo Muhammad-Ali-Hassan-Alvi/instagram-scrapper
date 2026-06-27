@@ -13,9 +13,16 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "scrape:instagram": "tsx --tsconfig tsconfig.json scripts/scrape-instagram.ts",
+    "scrape:tiktok": "tsx --tsconfig tsconfig.json scripts/scrape-tiktok.ts",
+    "instagram:login": "tsx --tsconfig tsconfig.json scripts/instagram-login-once.ts",
+    "tiktok:login": "tsx --tsconfig tsconfig.json scripts/tiktok-login-once.ts",
+    "tiktok:import-session": "tsx --tsconfig tsconfig.json scripts/import-tiktok-session.ts",
+    "tiktok:import-apify": "tsx --tsconfig tsconfig.json scripts/import-apify-tiktok.ts",
     "cron": "tsx --tsconfig tsconfig.json scripts/cron-worker.ts",
     "cron:once": "tsx --tsconfig tsconfig.json scripts/cron-once.ts",
-    "export:all": "tsx --tsconfig tsconfig.json scripts/export-all.ts"
+    "export:all": "tsx --tsconfig tsconfig.json scripts/export-all.ts",
+    "sync:session-to-ec2": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-session-to-ec2.ps1 -Ec2Ip 13.48.105.194",
+    "deploy:ec2": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy-to-ec2.ps1 -Ec2Ip 13.48.105.194"
   },
   "dependencies": {
     "docx": "^9.7.1",

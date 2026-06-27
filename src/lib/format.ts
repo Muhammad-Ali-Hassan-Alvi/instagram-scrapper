@@ -33,3 +33,19 @@ export function instagramPostUrl(shortcode: string, type: string): string {
   if (type === "reel") return `https://www.instagram.com/reel/${shortcode}/`;
   return `https://www.instagram.com/p/${shortcode}/`;
 }
+
+export function tiktokPostUrl(username: string, videoId: string): string {
+  if (!videoId) return "";
+  const handle = username.replace(/^@/, "");
+  return `https://www.tiktok.com/@${handle}/video/${videoId}`;
+}
+
+export function postUrlForPlatform(
+  platform: string,
+  username: string,
+  shortcode: string,
+  type: string,
+): string {
+  if (platform === "tiktok") return tiktokPostUrl(username, shortcode);
+  return instagramPostUrl(shortcode, type);
+}

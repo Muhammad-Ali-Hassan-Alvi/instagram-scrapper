@@ -70,6 +70,7 @@ export interface WeeklyCategoryPoint {
 
 export interface TopPostRow {
   username: string;
+  platform: string;
   shortcode: string;
   type: string;
   postedAt: string;
@@ -83,6 +84,7 @@ export interface TopPostRow {
 }
 
 export interface AccountAnalyticsSlice {
+  platform: string;
   username: string;
   kpis: AnalyticsKpis;
   topPosts: TopPostRow[];
@@ -102,7 +104,13 @@ export interface AnalyticsSnapshot {
   topPostsByAccount: AccountAnalyticsSlice[];
   availableYears: number[];
   availableAccounts: string[];
-  accountSummaries: { username: string; followers: number; scrapedPosts: number; totalPosts: number }[];
+  accountSummaries: {
+    platform: string;
+    username: string;
+    followers: number;
+    scrapedPosts: number;
+    totalPosts: number;
+  }[];
   lastDataRefresh: string | null;
   insightsNote: string;
 }

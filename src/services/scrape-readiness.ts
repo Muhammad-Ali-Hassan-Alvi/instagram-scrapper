@@ -5,6 +5,7 @@ import { Account } from "@/models/Account";
 import { Post } from "@/models/Post";
 
 export interface AccountReadiness {
+  platform: string;
   username: string;
   scrapedPosts: number;
   totalPosts: number;
@@ -26,8 +27,7 @@ function staleAfterMs(): number {
 }
 
 export async function getDataReadiness(): Promise<DataReadiness> {
-  const targets = DEFAULT_TARGET_ACCOUNTS.filter((account) => account.platform === "instagram");
-  const usernames = targets.map((target) => target.username);
+  const targets = DEFAULT_TARGET_ACCOUNTS;
 
   try {
     await connectDB();
@@ -36,8 +36,9 @@ export async function getDataReadiness(): Promise<DataReadiness> {
       ready: false,
       stale: true,
       needsScrape: true,
-      accounts: usernames.map((username) => ({
-        username,
+      accounts: targets.map((target) => ({
+        platform: target.platform,
+        username: target.username,
         scrapedPosts: 0,
         totalPosts: 0,
         lastScrapedAt: null,
@@ -47,7 +48,12 @@ export async function getDataReadiness(): Promise<DataReadiness> {
     };
   }
 
-  const accountDocs = await Account.find({ username: { $in: usernames } }).lean();
+  const accountDocs = await Account.find({
+    $or: targets.map((target) => ({
+      username: target.username,
+      platform: target.platform,
+    })),
+  }).lean();
   const postCounts = await Post.aggregate<{ _id: unknown; count: number }>([
     { $group: { _id: "$accountId", count: { $sum: 1 } } },
   ]);
@@ -58,15 +64,18 @@ export async function getDataReadiness(): Promise<DataReadiness> {
 
   const now = Date.now();
   const accounts: AccountReadiness[] = targets.map((target) => {
-    const doc = accountDocs.find((account) => account.username === target.username);
+    const doc = accountDocs.find(
+      (account) => account.username === target.username && account.platform === target.platform,
+    );
     const scrapedPosts = doc ? (postCountByAccountId.get(String(doc._id)) ?? 0) : 0;
-    const totalPosts = doc?.totalPosts ?? 0;
+    const totalPosts = Math.max(doc?.totalPosts ?? 0, scrapedPosts);
     const complete =
       Boolean(doc) &&
       scrapedPosts > 0 &&
       (totalPosts === 0 || scrapedPosts >= totalPosts);
 
     return {
+      platform: target.platform,
       username: target.username,
       scrapedPosts,
       totalPosts,
@@ -94,7 +103,7 @@ export async function getDataReadiness(): Promise<DataReadiness> {
     reason = incomplete
       .map(
         (account) =>
-          `@${account.username}: ${account.scrapedPosts}/${account.totalPosts || "?"} posts`,
+          `${account.platform} @${account.username}: ${account.scrapedPosts}/${account.totalPosts || "?"} posts`,
       )
       .join(", ");
   } else if (stale) {

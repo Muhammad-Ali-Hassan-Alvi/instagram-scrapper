@@ -27,6 +27,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   const { searchParams } = new URL(request.url);
   const format = parseFormat(searchParams.get("format"));
   const account = searchParams.get("account") ?? undefined;
+  const platform = searchParams.get("platform") ?? undefined;
 
   if (!format) {
     return NextResponse.json(
@@ -40,7 +41,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   }
 
   try {
-    const rows = await buildConsolidatedExportRows(new Date(), account);
+    const rows = await buildConsolidatedExportRows(new Date(), account, platform);
 
     if (!rows.length) {
       return NextResponse.json(

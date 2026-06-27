@@ -2,6 +2,7 @@
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
+import { accountLabel, parseAccountKey } from "@/lib/account-route";
 import { ui } from "@/lib/ui-classes";
 import type { AnalyticsSnapshot } from "@/types/analytics";
 
@@ -32,6 +33,7 @@ export function AnalyticsFilters({ snapshot }: { snapshot: AnalyticsSnapshot }) 
         options={[
           { value: "all", label: "All" },
           { value: "instagram", label: "Instagram" },
+          { value: "tiktok", label: "TikTok" },
         ]}
       />
       <FilterSelect
@@ -52,10 +54,13 @@ export function AnalyticsFilters({ snapshot }: { snapshot: AnalyticsSnapshot }) 
         onChange={(value) => update("account", value)}
         options={[
           { value: "all", label: "All accounts" },
-          ...snapshot.availableAccounts.map((account) => ({
-            value: account,
-            label: `@${account}`,
-          })),
+          ...snapshot.availableAccounts.map((key) => {
+            const parsed = parseAccountKey(key);
+            return {
+              value: key,
+              label: parsed ? accountLabel(parsed.platform, parsed.username) : key,
+            };
+          }),
         ]}
       />
       <FilterSelect

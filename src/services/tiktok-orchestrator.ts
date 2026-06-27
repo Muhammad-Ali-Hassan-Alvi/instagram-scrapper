@@ -3,11 +3,11 @@ import { connectDB } from "@/lib/db";
 import { ScrapeLog } from "@/models/ScrapeLog";
 import {
   closeBrowserSession,
-  createInstagramBrowserSession,
-  saveInstagramSession,
+  createTikTokBrowserSession,
+  saveTikTokSession,
 } from "@/playwright/browser";
-import { ensureInstagramLogin, dismissInstagramCheckpoint } from "@/playwright/instagram-auth";
-import { InstagramClient } from "@/scrapers/instagram/client";
+import { ensureTikTokLogin } from "@/playwright/tiktok-auth";
+import { TikTokClient } from "@/scrapers/tiktok/client";
 import {
   appendHistoricalCsvSnapshot,
   writeConsolidatedCsv,
@@ -27,36 +27,16 @@ import {
 import type { ConsolidatedExportRow } from "@/types/consolidated-export";
 import { logger } from "@/utils/logger";
 
-export interface ScrapeRunResult {
-  username: string;
-  success: boolean;
-  postsCollected: number;
-  postsInserted: number;
-  postsUpdated: number;
-  pagesScraped: number;
-  error?: string;
-}
+import type { OrchestratorResult, ScrapeRunResult } from "./scrape-orchestrator";
 
-export interface OrchestratorResult {
-  startedAt: Date;
-  completedAt: Date;
-  accounts: ScrapeRunResult[];
-  csv: {
-    consolidatedPath: string;
-    snapshotPath: string;
-    historyPath: string;
-    rowCount: number;
-  };
-}
-
-async function scrapeInstagramAccount(
-  client: InstagramClient,
+async function scrapeTikTokAccount(
+  client: TikTokClient,
   target: TargetAccount,
   loggedIn: boolean,
 ): Promise<ScrapeRunResult> {
   const startedAt = Date.now();
   const log = await ScrapeLog.create({
-    platform: "instagram",
+    platform: "tiktok",
     username: target.username,
     startedAt: new Date(startedAt),
     success: false,
@@ -119,9 +99,9 @@ async function scrapeInstagramAccount(
   }
 }
 
-export async function runInstagramScrape(
+export async function runTikTokScrape(
   targets: TargetAccount[] = DEFAULT_TARGET_ACCOUNTS.filter(
-    (account) => account.platform === "instagram",
+    (account) => account.platform === "tiktok",
   ),
 ): Promise<OrchestratorResult> {
   const startedAt = new Date();
@@ -137,38 +117,37 @@ export async function runInstagramScrape(
     );
   }
 
-  const session = await createInstagramBrowserSession();
+  const session = await createTikTokBrowserSession();
   const accounts: ScrapeRunResult[] = [];
   const fallbackRows: ConsolidatedExportRow[] = [];
   const dataRefresh = new Date();
 
   try {
-    setScrapePhase("login", "Logging into Instagram…");
-    const loggedIn = await ensureInstagramLogin(session.page, session.context);
+    setScrapePhase("login", "Logging into TikTok…");
+    const loggedIn = await ensureTikTokLogin(session.page, session.context);
 
     if (!loggedIn) {
       logger.warn(
-        "Instagram not authenticated — only ~12 posts per account will be collected. Check INSTAGRAM_USERNAME/PASSWORD in .env.local",
+        "TikTok not authenticated — profile metadata only; run npm run tiktok:login for full video history",
       );
     } else {
-      await dismissInstagramCheckpoint(session.page);
-      await saveInstagramSession(session.context);
+      await saveTikTokSession(session.context);
     }
 
-    setScrapePhase("scraping", "Collecting posts from target accounts…");
+    setScrapePhase("scraping", "Collecting TikTok posts from target accounts…");
 
-    const client = InstagramClient.fromPage(session.page);
-    const instagramTargets = targets.filter((target) => target.platform === "instagram");
+    const client = TikTokClient.fromPage(session.page);
+    const tiktokTargets = targets.filter((target) => target.platform === "tiktok");
     const categoryByUsername = new Map(
       DEFAULT_TARGET_ACCOUNTS.map((target) => [target.username, target.category ?? ""]),
     );
 
-    for (const target of instagramTargets) {
-      logger.info(`Scraping Instagram @${target.username}`);
+    for (const target of tiktokTargets) {
+      logger.info(`Scraping TikTok @${target.username}`);
       setAccountRunning(target.username);
 
       if (dbConnected) {
-        const result = await scrapeInstagramAccount(client, target, loggedIn);
+        const result = await scrapeTikTokAccount(client, target, loggedIn);
         accounts.push(result);
         if (!result.success) {
           logger.error(`Failed @${target.username}: ${result.error}`);
@@ -179,7 +158,7 @@ export async function runInstagramScrape(
           const { profile, posts, pagesScraped } = await client.scrapeAccount(
             target.username,
             category,
-            false,
+            loggedIn,
           );
           for (const post of posts) {
             fallbackRows.push(scrapedPostToConsolidatedRow(post, profile.followers, dataRefresh));
@@ -209,7 +188,7 @@ export async function runInstagramScrape(
     }
 
     if (loggedIn) {
-      await saveInstagramSession(session.context);
+      await saveTikTokSession(session.context);
     }
   } finally {
     await closeBrowserSession(session);

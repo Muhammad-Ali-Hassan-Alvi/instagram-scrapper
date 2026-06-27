@@ -1,42 +1,4 @@
-import { PostType } from "@/models/Post";
-
-export interface ScrapedProfile {
-  platform: "instagram";
-  accountId: string;
-  username: string;
-  displayName: string;
-  biography: string;
-  profileImage: string;
-  followers: number;
-  following: number;
-  totalPosts: number;
-  verified: boolean;
-  isPrivate: boolean;
-  category: string;
-}
-
-export interface ScrapedPost {
-  platform: "instagram";
-  accountUsername: string;
-  accountId: string;
-  category: string;
-  postId: string;
-  shortcode: string;
-  postUrl: string;
-  type: PostType;
-  caption: string;
-  hashtags: string[];
-  mentions: string[];
-  mediaUrl: string;
-  thumbnailUrl: string;
-  postedAt: Date;
-  likes: number;
-  comments: number;
-  shares: number;
-  saves: number;
-  views: number;
-  duration: number | null;
-}
+export type { ScrapedPost, ScrapedProfile } from "@/scrapers/shared/types";
 
 export interface FeedUserResponse {
   items?: FeedItem[];

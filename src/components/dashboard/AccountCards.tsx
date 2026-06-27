@@ -1,3 +1,4 @@
+import { platformLabel, profileUrl } from "@/lib/account-route";
 import { formatDateTime, formatNumber } from "@/lib/format";
 import type { DashboardAccount } from "@/services/dashboard";
 
@@ -14,12 +15,14 @@ export function AccountCards({ accounts }: { accounts: DashboardAccount[] }) {
     <div className="grid gap-4 md:grid-cols-2">
       {accounts.map((account) => (
         <article
-          key={account.username}
+          key={`${account.platform}-${account.username}`}
           className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900"
         >
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-wide text-zinc-500">{account.platform}</p>
+              <p className="text-xs uppercase tracking-wide text-zinc-500">
+                {platformLabel(account.platform)}
+              </p>
               <h3 className="mt-1 text-lg font-semibold">@{account.username}</h3>
               {account.displayName && (
                 <p className="text-sm text-zinc-600 dark:text-zinc-400">{account.displayName}</p>
@@ -53,12 +56,12 @@ export function AccountCards({ accounts }: { accounts: DashboardAccount[] }) {
           </dl>
 
           <a
-            href={`https://www.instagram.com/${account.username}/`}
+            href={profileUrl(account.platform, account.username)}
             target="_blank"
             rel="noreferrer"
             className="mt-4 inline-block text-sm text-zinc-600 underline-offset-2 hover:underline dark:text-zinc-400"
           >
-            View on Instagram →
+            View on {platformLabel(account.platform)} →
           </a>
         </article>
       ))}

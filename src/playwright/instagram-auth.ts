@@ -3,7 +3,7 @@ import type { BrowserContext, Page } from "playwright";
 import { getEnv, hasInstagramCredentials } from "@/config/env";
 import { logger } from "@/utils/logger";
 
-import { saveInstagramSession } from "./browser";
+import { saveInstagramSession, hasStoredInstagramSession } from "./browser";
 import { INSTAGRAM_BASE_URL } from "./constants";
 
 async function clickIfVisible(page: Page, selector: string): Promise<boolean> {
@@ -45,12 +45,49 @@ async function isLoggedIn(page: Page): Promise<boolean> {
   return cookies.some((cookie) => cookie.name === "sessionid" && cookie.value.length > 0);
 }
 
-async function waitForLoginSession(page: Page): Promise<boolean> {
-  const deadline = Date.now() + 90000;
+async function submitEmailCode(page: Page, code: string): Promise<boolean> {
+  await dismissPostLoginPrompts(page);
+
+  const codeInput = page
+    .locator(
+      'input[name="code"], input[autocomplete="one-time-code"], input[inputmode="numeric"], input[aria-label="Code"], input[placeholder="Code"]',
+    )
+    .first();
+
+  const codeByLabel = page.getByLabel("Code", { exact: false });
+
+  const target = (await codeInput.isVisible({ timeout: 3000 }).catch(() => false))
+    ? codeInput
+    : codeByLabel;
+
+  if (!(await target.isVisible({ timeout: 10000 }).catch(() => false))) {
+    logger.warn("Email code input not found on page");
+    return false;
+  }
+
+  await target.fill(code);
+  await page.waitForTimeout(500);
+  await clickIfVisible(page, 'button:has-text("Continue")');
+  await clickIfVisible(page, 'div[role="button"]:has-text("Continue")');
+  await page.waitForTimeout(3000);
+  return isLoggedIn(page);
+}
+
+async function waitForLoginSession(page: Page, emailCode?: string): Promise<boolean> {
+  const deadline = Date.now() + 120000;
+  let codeAttempted = false;
 
   while (Date.now() < deadline) {
     if (await isLoggedIn(page)) {
       return true;
+    }
+
+    if (emailCode && !codeAttempted && (await isEmailCodeChallenge(page))) {
+      logger.info("Submitting Instagram email verification code");
+      codeAttempted = true;
+      if (await submitEmailCode(page, emailCode)) {
+        return true;
+      }
     }
 
     const url = page.url();
@@ -58,7 +95,7 @@ async function waitForLoginSession(page: Page): Promise<boolean> {
       await dismissPostLoginPrompts(page);
     }
 
-    if (!url.includes("/accounts/login")) {
+    if (!url.includes("/accounts/login") && !url.includes("/auth_platform/")) {
       await dismissPostLoginPrompts(page);
       if (await isLoggedIn(page)) {
         return true;
@@ -71,18 +108,32 @@ async function waitForLoginSession(page: Page): Promise<boolean> {
   return isLoggedIn(page);
 }
 
+async function isEmailCodeChallenge(page: Page): Promise<boolean> {
+  const url = page.url();
+  if (url.includes("/auth_platform/codeentry") || url.includes("/challenge")) {
+    return true;
+  }
+
+  const bodyText = await page.locator("body").innerText().catch(() => "");
+  return bodyText.includes("Check your email") || bodyText.includes("Enter the code");
+}
+
 async function fillLoginForm(page: Page, username: string, password: string): Promise<void> {
+  await dismissPostLoginPrompts(page);
+
   const usernameInput = page
     .locator(
-      'input[name="email"], input[name="username"], input[autocomplete="username webauthn"], input[autocomplete="username"]',
+      'input[name="email"], input[name="username"], input[aria-label="Phone number, username, or email"], input[placeholder*="username" i], input[autocomplete="username webauthn"], input[autocomplete="username"]',
     )
     .first();
 
   const passwordInput = page
-    .locator('input[name="pass"], input[name="password"], input[type="password"]')
+    .locator(
+      'input[name="pass"], input[name="password"], input[aria-label="Password"], input[type="password"]',
+    )
     .first();
 
-  await usernameInput.waitFor({ state: "visible", timeout: 30000 });
+  await usernameInput.waitFor({ state: "visible", timeout: 45000 });
   await usernameInput.fill(username);
   await passwordInput.fill(password);
 
@@ -95,17 +146,57 @@ async function fillLoginForm(page: Page, username: string, password: string): Pr
   await passwordInput.press("Enter");
 }
 
+export async function dismissInstagramCheckpoint(page: Page): Promise<void> {
+  const url = page.url();
+  if (!url.includes("/challenge") && !url.includes("scraping_warning")) {
+    await page.goto(`${INSTAGRAM_BASE_URL}/`, {
+      waitUntil: "domcontentloaded",
+      timeout: 90000,
+    });
+    await page.waitForTimeout(2000);
+  }
+
+  if (page.url().includes("/challenge") || page.url().includes("scraping_warning")) {
+    logger.info("Instagram checkpoint detected — attempting to dismiss");
+    await dismissPostLoginPrompts(page);
+    await clickIfVisible(page, 'button:has-text("Dismiss")');
+    await clickIfVisible(page, 'div[role="button"]:has-text("Dismiss")');
+    await page.waitForTimeout(3000);
+  }
+}
+
 export async function ensureInstagramLogin(page: Page, context: BrowserContext): Promise<boolean> {
   await page.goto(`${INSTAGRAM_BASE_URL}/`, {
     waitUntil: "domcontentloaded",
     timeout: 90000,
   });
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(2000);
   await dismissPostLoginPrompts(page);
 
   if (await isLoggedIn(page)) {
     logger.info("Instagram session already active");
+    await saveInstagramSession(context);
     return true;
+  }
+
+  if (hasStoredInstagramSession()) {
+    logger.info("Stored session present — waiting for cookies to hydrate");
+    await page.waitForTimeout(3000);
+    await dismissPostLoginPrompts(page);
+    if (await isLoggedIn(page)) {
+      logger.info("Instagram session restored from storage");
+      return true;
+    }
+
+    logger.warn(
+      "Stored session expired — will attempt fresh login unless INSTAGRAM_SESSION_ONLY=true",
+    );
+    if (getEnv().INSTAGRAM_SESSION_ONLY) {
+      logger.warn(
+        "INSTAGRAM_SESSION_ONLY is set — run npm run sync:session-to-ec2 from your laptop to refresh the session",
+      );
+      return false;
+    }
   }
 
   if (!hasInstagramCredentials()) {
@@ -113,7 +204,7 @@ export async function ensureInstagramLogin(page: Page, context: BrowserContext):
     return false;
   }
 
-  const { INSTAGRAM_USERNAME, INSTAGRAM_PASSWORD } = getEnv();
+  const { INSTAGRAM_USERNAME, INSTAGRAM_PASSWORD, INSTAGRAM_EMAIL_CODE } = getEnv();
   logger.info("Logging into Instagram");
 
   try {
@@ -125,8 +216,14 @@ export async function ensureInstagramLogin(page: Page, context: BrowserContext):
     await dismissPostLoginPrompts(page);
     await fillLoginForm(page, INSTAGRAM_USERNAME!, INSTAGRAM_PASSWORD!);
 
-    const loggedIn = await waitForLoginSession(page);
+    const loggedIn = await waitForLoginSession(page, INSTAGRAM_EMAIL_CODE);
     if (!loggedIn) {
+      if (await isEmailCodeChallenge(page)) {
+        logger.warn(
+          "Instagram requires email verification — sync .auth/instagram-session.json from your laptop (npm run sync:session-to-ec2) or set INSTAGRAM_EMAIL_CODE in .env.local",
+        );
+        return false;
+      }
       const errorText = await page
         .locator("body")
         .innerText()
