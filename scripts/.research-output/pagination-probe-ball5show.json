@@ -1,0 +1,43 @@
+{
+  "userId": "44647038305",
+  "endCursor": "QVFCY1AzdG9lUTBlUXFDZUFMUEc5ZWpUcGZqbTA2eU9kSGwxelFoLXpGNnR5RjFpcHhpY3gwSVhPRmFOQU5ZbEhQeXNIU2tEREVJYmhIN1l3aHNVTmtsMg==",
+  "firstPageEdges": 12,
+  "attempts": [
+    {
+      "label": "feed/user max_id=0",
+      "status": 200,
+      "ct": "application/json; charset=utf-8",
+      "ok": true,
+      "len": 548256,
+      "preview": "{\"profile_grid_items\":null,\"profile_grid_items_cursor\":null,\"pinned_profile_grid_items_ids\":null,\"special_empty_state\":null,\"num_results\":12,\"more_available\":true,\"items\":[{\"strong_id__\":\"3601436165037230909_317759472\",\"id\":\"3601436165037230909_317759472\",\"caption_is_edited\":false,\"device_timestamp\"",
+      "hasEdges": false
+    },
+    {
+      "label": "graphql query_id legacy",
+      "status": 400,
+      "ct": "application/json; charset=utf-8",
+      "ok": false,
+      "len": 108,
+      "preview": "{\"message\":\"invalid request\",\"errors\":[{\"message\":\"execution error\",\"severity\":\"CRITICAL\"}],\"status\":\"fail\"}",
+      "hasEdges": false
+    },
+    {
+      "label": "graphql doc_id profile posts",
+      "status": 400,
+      "ct": "application/json; charset=utf-8",
+      "ok": false,
+      "len": 108,
+      "preview": "{\"message\":\"invalid request\",\"errors\":[{\"message\":\"execution error\",\"severity\":\"CRITICAL\"}],\"status\":\"fail\"}",
+      "hasEdges": false
+    },
+    {
+      "label": "graphql doc_id alt",
+      "status": 400,
+      "ct": "application/json; charset=utf-8",
+      "ok": false,
+      "len": 108,
+      "preview": "{\"message\":\"invalid request\",\"errors\":[{\"message\":\"execution error\",\"severity\":\"CRITICAL\"}],\"status\":\"fail\"}",
+      "hasEdges": false
+    }
+  ]
+}

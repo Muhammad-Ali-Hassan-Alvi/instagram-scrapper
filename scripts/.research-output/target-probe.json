@@ -1,0 +1,48 @@
+{
+  "nicky.cass": {
+    "profile": {
+      "webProfileInfo": {
+        "id": "317759472",
+        "username": "nicky.cass",
+        "followers": 2041429,
+        "posts": 2036,
+        "edges": 12,
+        "pageInfo": {
+          "has_next_page": true,
+          "end_cursor": "QVFCYnNkaFlJN2hzdzBoWXNHYXBOcmZTNE4tc3NaYjRtM01VTHhHaW9TeGxBRmhNYUVhaDBtZVdPSngwYUVxSHVkdURKNFFZdW53Z0xnNFpuNTE2TlJQaQ=="
+        },
+        "private": false
+      }
+    },
+    "graphqlHits": 1,
+    "samples": [
+      {
+        "url": "https://www.instagram.com/api/v1/users/web_profile_info/?username=nicky.cass",
+        "snippet": "{\"data\":{\"user\":{\"ai_agent_owner_username\":null,\"ai_agent_type\":null,\"biography\":\"If you want to laugh, stay here. \\nIf you want to know how I built this page, follow @entrepenicky\\nIf you like baseball, follow @ballplayer\",\"bio_links\":[{\"title\":\"\",\"lynx_url\":\"https://l.instagram.com/?u=https%3A%2F%2Fwww.cameo.com%2Fnickycass%3Fsrsltid%3DAfmBOorodRYQXLLJdQUlhfbNCMCmdKFMvriTAeyFSq8xk-87Rdmg1s_T\\u0026e=AUBUfVsKmsst9FWQG8yIq2jQAred6VYMU0eQbwXEeNIafWdTLiRphMSpA7YaBsv6qzmy1wB8xYCZib2ey7v-iFRk6gT7ZspN"
+      }
+    ]
+  },
+  "ball5show": {
+    "profile": {
+      "webProfileInfo": {
+        "id": "44647038305",
+        "username": "ball5show",
+        "followers": 24650,
+        "posts": 210,
+        "edges": 12,
+        "pageInfo": {
+          "has_next_page": true,
+          "end_cursor": "QVFEellmOHJtMm1oS3Uzbi1fZzF4Uk1rVlBBM0F0aUxwNkk1UjRfT3dacjRmOFlNSTVOTUxFM0ROdzZOWl9nYzRWM3U4YWhxWkI3b253ZUkzS2V4eWllNQ=="
+        },
+        "private": false
+      }
+    },
+    "graphqlHits": 1,
+    "samples": [
+      {
+        "url": "https://www.instagram.com/api/v1/users/web_profile_info/?username=ball5show",
+        "snippet": "{\"data\":{\"user\":{\"ai_agent_owner_username\":null,\"ai_agent_type\":null,\"biography\":\"It’s the show baseball needs. \\nHosts @nicky.cass \\u0026 @perry.quartuccio\\nSeason 2 coming soon\",\"bio_links\":[],\"fb_profile_biolink\":null,\"biography_with_entities\":{\"raw_text\":\"It’s the show baseball needs. \\nHosts @nicky.cass \\u0026 @perry.quartuccio\\nSeason 2 coming soon\",\"entities\":[{\"user\":{\"username\":\"nicky.cass\"},\"hashtag\":null},{\"user\":{\"username\":\"perry.quartuccio\"},\"hashtag\":null}]},\"blocked_by_viewer\":fa"
+      }
+    ]
+  }
+}

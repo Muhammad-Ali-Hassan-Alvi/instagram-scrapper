@@ -1,0 +1,26 @@
+[
+  {
+    "url": "https://www.instagram.com/api/graphql",
+    "status": 200,
+    "file": "scripts/.research-output/full-0-_api_graphql.txt",
+    "len": 3568
+  },
+  {
+    "url": "https://www.instagram.com/api/v1/users/web_profile_info/?username=instagram",
+    "status": 200,
+    "file": "scripts/.research-output/full-1-_api_v1_users_web_profile_info_username_instagram.txt",
+    "len": 621460
+  },
+  {
+    "url": "https://www.instagram.com/graphql/query/?query_id=9957820854288654&user_id=25025320&include_chaining=false&include_reel=true&include_suggested_users=false&include_logged_out_extras=true&include_live_status=false&include_highlight_reels=true",
+    "status": 200,
+    "file": "scripts/.research-output/full-2-_graphql_query_query_id_9957820854288654_user_id_25025320_include_chaining_false.txt",
+    "len": 21504
+  },
+  {
+    "url": "https://www.instagram.com/graphql/query/?doc_id=18113378221181848&variables=%7B%22include_chaining%22%3Afalse%2C%22include_highlight_reels%22%3Afalse%2C%22include_live_status%22%3Afalse%2C%22include_logged_out_extras%22%3Atrue%2C%22include_reel%22%3Afalse%2C%22include_suggested_users%22%3Afalse%2C%22user_id%22%3A%2225025320%22%7D",
+    "status": 400,
+    "file": "scripts/.research-output/full-3-_graphql_query_doc_id_18113378221181848_variables_7B_22include_chaining_22_3Afal.txt",
+    "len": 215
+  }
+]

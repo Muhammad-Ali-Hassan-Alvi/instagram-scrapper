@@ -1,0 +1,180 @@
+[
+  {
+    "status": 200,
+    "method": "POST",
+    "path": "/api/graphql",
+    "contentType": "text/javascript; charset=utf-8",
+    "jsonKeys": null,
+    "fieldSamples": null
+  },
+  {
+    "status": 200,
+    "method": "POST",
+    "path": "/api/graphql",
+    "contentType": "text/javascript; charset=utf-8",
+    "jsonKeys": null,
+    "fieldSamples": null
+  },
+  {
+    "status": 200,
+    "method": "GET",
+    "path": "/api/v1/users/web_profile_info/?username=instagram",
+    "contentType": "application/json; charset=utf-8",
+    "jsonKeys": [
+      "data",
+      "status"
+    ],
+    "fieldSamples": {
+      "data": [
+        "user"
+      ],
+      "user": [
+        "ai_agent_owner_username",
+        "ai_agent_type",
+        "biography",
+        "bio_links",
+        "fb_profile_biolink",
+        "biography_with_entities",
+        "blocked_by_viewer",
+        "restricted_by_viewer",
+        "country_block",
+        "eimu_id",
+        "external_url",
+        "external_url_linkshimmed",
+        "edge_followed_by",
+        "fbid",
+        "followed_by_viewer",
+        "edge_follow",
+        "follows_viewer",
+        "full_name",
+        "group_metadata",
+        "has_ar_effects"
+      ],
+      "biography": "Discover what's new on Instagram 🔎✨",
+      "edge_followed_by": [
+        "count"
+      ],
+      "edge_follow": [
+        "count"
+      ],
+      "full_name": "Instagram",
+      "id": "25025320",
+      "is_private": false,
+      "is_verified": true,
+      "profile_pic_url": "https://instagram.fskt2-1.fna.fbcdn.net/v/t51.82787-19/550891366_18667771684001321_1383210656577177067_n.jpg?stp=dst-jpg_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=instagram.fskt2-1.fna.fbcdn.net&_nc_cat=1&_nc_oc=Q6cZ2gE61f6zKcIwUWCEVpNWzqardZ0GWoBWwF6q8VyPdPFkeGST-Y9L2PzwW9bJ8dxfxS8&_nc_ohc=NrX5FzOE02AQ7kNvwHSH3aq&_nc_gid=A96m8NP3B81b21NP-7qocg&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_Af8BjJkvF_kZcl6ifbvhmA6Zt-wBogHr1d0T6bQcQxSf_Q&oe=6A45B4A7&_nc_sid=8b3546",
+      "profile_pic_url_hd": "https://instagram.fskt2-1.fna.fbcdn.net/v/t51.82787-19/550891366_18667771684001321_1383210656577177067_n.jpg?stp=dst-jpg_s320x320_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=instagram.fskt2-1.fna.fbcdn.net&_nc_cat=1&_nc_oc=Q6cZ2gE61f6zKcIwUWCEVpNWzqardZ0GWoBWwF6q8VyPdPFkeGST-Y9L2PzwW9bJ8dxfxS8&_nc_ohc=NrX5FzOE02AQ7kNvwHSH3aq&_nc_gid=A96m8NP3B81b21NP-7qocg&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_Af8iutgRz5qvOOekPwUy-Ip0l9u7Rjhmz5kJiUiPbXkc-A&oe=6A45B4A7&_nc_sid=8b3546",
+      "username": "instagram",
+      "edge_owner_to_timeline_media": [
+        "count",
+        "page_info",
+        "edges"
+      ]
+    }
+  },
+  {
+    "status": 200,
+    "method": "GET",
+    "path": "/graphql/query/?query_id=9957820854288654&user_id=25025320&include_chaining=false&include_reel=true&include_suggested_users=false&include_logged_out_extras=true&include_live_status=false&include_highlight_reels=true",
+    "contentType": "application/json; charset=utf-8",
+    "jsonKeys": [
+      "data",
+      "extensions",
+      "status"
+    ],
+    "fieldSamples": {
+      "data": [
+        "viewer",
+        "user"
+      ],
+      "user": [
+        "has_public_story",
+        "is_live",
+        "reel",
+        "edge_chaining",
+        "edge_highlight_reels"
+      ]
+    }
+  },
+  {
+    "status": 200,
+    "method": "GET",
+    "path": "/api/v1/web/get_ruling_for_content/?content_type=PROFILE&target_id=25025320",
+    "contentType": "application/json; charset=utf-8",
+    "jsonKeys": [
+      "title",
+      "description",
+      "session_id",
+      "blocks_logging_data",
+      "status"
+    ],
+    "fieldSamples": null
+  },
+  {
+    "status": 200,
+    "method": "POST",
+    "path": "/api/graphql",
+    "contentType": "text/javascript; charset=utf-8",
+    "jsonKeys": null,
+    "fieldSamples": null
+  },
+  {
+    "status": 200,
+    "method": "POST",
+    "path": "/api/graphql",
+    "contentType": "text/javascript; charset=utf-8",
+    "jsonKeys": null,
+    "fieldSamples": null
+  },
+  {
+    "status": 200,
+    "method": "POST",
+    "path": "/api/graphql",
+    "contentType": "text/javascript; charset=utf-8",
+    "jsonKeys": null,
+    "fieldSamples": null
+  },
+  {
+    "status": 200,
+    "method": "POST",
+    "path": "/api/graphql",
+    "contentType": "text/javascript; charset=utf-8",
+    "jsonKeys": null,
+    "fieldSamples": null
+  },
+  {
+    "status": 200,
+    "method": "POST",
+    "path": "/api/graphql",
+    "contentType": "text/javascript; charset=utf-8",
+    "jsonKeys": null,
+    "fieldSamples": null
+  },
+  {
+    "status": 200,
+    "method": "POST",
+    "path": "/api/graphql",
+    "contentType": "text/javascript; charset=utf-8",
+    "jsonKeys": null,
+    "fieldSamples": null
+  },
+  {
+    "status": 200,
+    "method": "POST",
+    "path": "/api/graphql",
+    "contentType": "text/javascript; charset=utf-8",
+    "jsonKeys": null,
+    "fieldSamples": null
+  },
+  {
+    "status": 400,
+    "method": "GET",
+    "path": "/graphql/query/?doc_id=18113378221181848&variables=%7B%22include_chaining%22%3Afalse%2C%22include_highlight_reels%22%3Afalse%2C%22include_live_status%22%3Afalse%2C%22include_logged_out_extras%22%3Atrue%2C%22include_",
+    "contentType": "application/json; charset=utf-8",
+    "jsonKeys": [
+      "message",
+      "errors",
+      "status"
+    ],
+    "fieldSamples": null
+  }
+]
