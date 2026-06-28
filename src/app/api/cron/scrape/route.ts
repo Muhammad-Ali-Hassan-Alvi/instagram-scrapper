@@ -40,10 +40,18 @@ async function handleCron(request: Request): Promise<NextResponse> {
 
     return NextResponse.json({
       success: true,
-      accounts: result.accounts,
-      csv: result.csv,
-      startedAt: result.startedAt,
-      completedAt: result.completedAt,
+      instagram: {
+        accounts: result.instagram.accounts,
+        csv: result.instagram.csv,
+        startedAt: result.instagram.startedAt,
+        completedAt: result.instagram.completedAt,
+      },
+      tiktok: {
+        accounts: result.tiktok.accounts,
+        csv: result.tiktok.csv,
+        startedAt: result.tiktok.startedAt,
+        completedAt: result.tiktok.completedAt,
+      },
     });
   } catch (error) {
     logger.error("Cron scrape failed", error);

@@ -64,8 +64,14 @@ Runs forever and scrapes on `CRON_SCHEDULE` (default: `0 6 * * *` = daily at 06:
 ## How to Run Locally
 
 ```bash
-# Start the development server
+# Recommended for client machines — dashboard + automatic scraper
+npm run dev:local
+
+# Dashboard only (no background scraping)
 npm run dev
+
+# Check what's in MongoDB right now
+npm run data:status
 
 # Type-check
 npm run typecheck
@@ -80,10 +86,24 @@ npm run format
 npm run build
 npm start
 
-# Run Instagram scrape (nicky.cass + ball5show by default)
+# Run Instagram scrape once (nicky.cass + ball5show by default)
 npm run scrape:instagram
 
-# Start 24-hour cron worker (runs scrape daily at CRON_SCHEDULE)
+# Run TikTok scrape once
+npm run scrape:tiktok
+
+# TikTok via TikTok-Content-Scraper (recommended — Apify-like public metrics, no API key)
+npm run tiktok:ttcs:setup
+npm run scrape:tiktok:ttcs
+
+# Import TikTok data from Apify JSON export
+npm run tiktok:import-apify -- path/to/apify-export.json nicky.cass1
+
+# One-time login to save browser sessions (run once per machine)
+npm run instagram:login
+npm run tiktok:login
+
+# Background worker only — scrapes daily on CRON_SCHEDULE (Instagram + TikTok)
 npm run cron
 
 # Run one scheduled scrape immediately (same as cron tick)
@@ -92,6 +112,15 @@ npm run cron:once
 # Scrape specific accounts
 npm run scrape:instagram -- ball5show nicky.cass
 ```
+
+### Client handoff (local access)
+
+1. Clone the repo and install dependencies (`npm install`, `npx playwright install`).
+2. Copy `.env.example` → `.env.local` and add MongoDB URI plus Instagram/TikTok login credentials.
+3. Run `npm run instagram:login` and `npm run tiktok:login` once to save sessions under `playwright/.auth/`.
+4. Run **`npm run dev:local`** — this starts the dashboard at [http://localhost:3000](http://localhost:3000) and a background worker that logs into Instagram and TikTok, saves posts to MongoDB, and repeats daily on `CRON_SCHEDULE` (default 06:00 UTC).
+
+`npm run dev` alone only starts the website. Playwright must run in a separate Node process (the cron worker or manual scrape commands), not inside the Next.js server.
 
 Output:
 - `data/consolidated.csv` — latest metrics per post
@@ -123,9 +152,9 @@ src/
 
 - [x] Mongoose models for Instagram account/post data
 - [x] Playwright Instagram scraper + CSV export
+- [x] TikTok scraper + Apify import fallback
 - [x] Cron route for 24-hour scrape interval (`vercel.json`)
-- [ ] TikTok scraper
-- [ ] Internal dashboard for viewing analytics
+- [x] Internal dashboard for viewing analytics
 - [ ] Authentication for internal users
 
 ## Coding Standards

@@ -36,6 +36,7 @@ yarn-error.log*
 # scraper runtime artifacts
 .auth/
 /data/
+/vendor/tiktok-content-scraper/
 .scrape.lock
 
 # vercel

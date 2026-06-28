@@ -8,6 +8,12 @@ import {
   setScrapeError,
 } from "./scrape-state";
 import { runInstagramScrape, type OrchestratorResult } from "./scrape-orchestrator";
+import { runTikTokScrape } from "./tiktok-orchestrator";
+
+export interface ScheduledScrapeResult {
+  instagram: OrchestratorResult;
+  tiktok: OrchestratorResult;
+}
 
 let scrapeInProgress = false;
 
@@ -15,7 +21,7 @@ let scrapeInProgress = false;
  * Runs the daily scrape with overlap protection.
  * Safe to call from cron workers and CLI scripts only.
  */
-export async function executeScheduledScrape(): Promise<OrchestratorResult | null> {
+export async function executeScheduledScrape(): Promise<ScheduledScrapeResult | null> {
   if (scrapeInProgress) {
     logger.warn("Scheduled scrape skipped — previous run still in progress (same process)");
     return null;
@@ -32,15 +38,31 @@ export async function executeScheduledScrape(): Promise<OrchestratorResult | nul
 
   try {
     logger.info(`Scheduled scrape started at ${startedAt.toISOString()}`);
-    const result = await runInstagramScrape();
+
+    logger.info("Running Instagram scrape…");
+    const instagram = await runInstagramScrape();
+    logger.info(
+      `Instagram done — ${instagram.accounts.filter((a) => a.success).length}/${instagram.accounts.length} accounts OK`,
+    );
+
+    logger.info("Running TikTok scrape…");
+    const tiktok = await runTikTokScrape();
+    logger.info(
+      `TikTok done — ${tiktok.accounts.filter((a) => a.success).length}/${tiktok.accounts.length} accounts OK`,
+    );
+
     const durationSec = Math.round((Date.now() - startedAt.getTime()) / 1000);
+    const okAccounts =
+      instagram.accounts.filter((a) => a.success).length +
+      tiktok.accounts.filter((a) => a.success).length;
+    const totalAccounts = instagram.accounts.length + tiktok.accounts.length;
 
     markScrapeComplete();
     logger.info(
-      `Scheduled scrape finished in ${durationSec}s — ${result.csv.rowCount} CSV rows, ${result.accounts.filter((a) => a.success).length}/${result.accounts.length} accounts OK`,
+      `Scheduled scrape finished in ${durationSec}s — ${instagram.csv.rowCount} CSV rows, ${okAccounts}/${totalAccounts} accounts OK`,
     );
 
-    return result;
+    return { instagram, tiktok };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Scrape failed";
     setScrapeError(message);

@@ -93,7 +93,8 @@ export default async function AccountDashboardPage({
             postsPage={snapshot.postsPage}
             filters={snapshot.filters}
             title={`All posts — ${platformLabel(platform)} @${normalized}`}
-            basePath={`/accounts/${normalized}?platform=${platform}`}
+            basePath={`/accounts/${normalized}`}
+            defaultQuery={{ platform }}
           />
         </Suspense>
       </div>

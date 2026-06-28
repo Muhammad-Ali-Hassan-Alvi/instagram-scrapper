@@ -13,6 +13,7 @@ const NAV = [
   { href: "/audience", label: "Audience" },
   { href: "/platform-benchmarking", label: "Benchmarking" },
   { href: "/exports", label: "Exports" },
+  { href: "/apify", label: "Apify Scraper" },
 ] as const;
 
 export function SidebarNav() {

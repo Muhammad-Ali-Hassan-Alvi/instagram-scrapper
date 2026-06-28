@@ -23,21 +23,42 @@ export function PaginatedPostsTable({
   title,
   showAccount = false,
   basePath,
+  defaultQuery,
 }: {
   postsPage: PostsPageResult;
   filters: AnalyticsFilters;
   title: string;
   showAccount?: boolean;
   basePath?: string;
+  defaultQuery?: Record<string, string>;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const routePath = basePath ?? pathname;
   const { rows, total, page, pageSize, totalPages } = postsPage;
 
-  function updateQuery(updates: Record<string, string | null>) {
+  function buildHref(updates: Record<string, string | null>): string {
+    const source = basePath ?? pathname;
+    const queryIndex = source.indexOf("?");
+    const path = queryIndex === -1 ? source : source.slice(0, queryIndex);
+    const embeddedDefaults =
+      queryIndex === -1
+        ? new URLSearchParams()
+        : new URLSearchParams(source.slice(queryIndex + 1));
     const params = new URLSearchParams(searchParams.toString());
+
+    embeddedDefaults.forEach((value, key) => {
+      params.set(key, value);
+    });
+
+    if (defaultQuery) {
+      for (const [key, value] of Object.entries(defaultQuery)) {
+        if (!params.has(key)) {
+          params.set(key, value);
+        }
+      }
+    }
+
     for (const [key, value] of Object.entries(updates)) {
       if (value === null) {
         params.delete(key);
@@ -45,7 +66,13 @@ export function PaginatedPostsTable({
         params.set(key, value);
       }
     }
-    router.push(`${routePath}?${params.toString()}`);
+
+    const query = params.toString();
+    return query ? `${path}?${query}` : path;
+  }
+
+  function updateQuery(updates: Record<string, string | null>) {
+    router.push(buildHref(updates));
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 

@@ -15,7 +15,7 @@ function isValidCronSchedule(schedule: string): boolean {
 }
 
 /**
- * Starts a background scheduler that runs the Instagram scrape on a cron interval.
+ * Starts a background scheduler that runs Instagram and TikTok scrapes on a cron interval.
  * Default: every day at 06:00 (server local time or CRON_TZ).
  */
 export function startCronWorker(options: CronWorkerOptions = {}): ScheduledTask {

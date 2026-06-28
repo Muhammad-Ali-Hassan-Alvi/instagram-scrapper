@@ -37,50 +37,78 @@ export interface PersistPostsResult {
   updated: number;
 }
 
+export interface PersistPostsOptions {
+  batchSize?: number;
+  onProgress?: (saved: number, total: number) => void | Promise<void>;
+}
+
 export async function persistPosts(
   accountObjectId: Types.ObjectId,
   posts: ScrapedPost[],
+  options?: PersistPostsOptions,
 ): Promise<PersistPostsResult> {
   let inserted = 0;
   let updated = 0;
   const scrapedAt = new Date();
+  const batchSize = options?.batchSize ?? 100;
 
-  for (const post of posts) {
-    const existing = await Post.findOne({
-      accountId: accountObjectId,
-      postId: post.postId,
-    }).select("_id");
-
-    await Post.findOneAndUpdate(
-      {
-        accountId: accountObjectId,
-        postId: post.postId,
-      },
-      {
-        accountId: accountObjectId,
-        platform: post.platform,
-        postId: post.postId,
-        shortcode: post.shortcode,
-        type: mapScrapedPostType(post.type),
-        caption: post.caption,
-        hashtags: post.hashtags,
-        mentions: post.mentions,
-        mediaUrl: post.mediaUrl,
-        thumbnailUrl: post.thumbnailUrl,
-        postedAt: post.postedAt,
-        likes: post.likes,
-        comments: post.comments,
-        shares: post.shares,
-        saves: post.saves,
-        views: post.views,
-        duration: post.duration,
-        scrapedAt,
-      },
-      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
+  for (let index = 0; index < posts.length; index += batchSize) {
+    const batch = posts.slice(index, index + batchSize);
+    const existingPostIds = new Set(
+      (
+        await Post.find({
+          accountId: accountObjectId,
+          postId: { $in: batch.map((post) => post.postId) },
+        })
+          .select("postId")
+          .lean()
+      ).map((post) => post.postId),
     );
 
-    if (existing) updated++;
-    else inserted++;
+    await Post.bulkWrite(
+      batch.map((post) => ({
+        updateOne: {
+          filter: {
+            accountId: accountObjectId,
+            postId: post.postId,
+          },
+          update: {
+            $set: {
+              accountId: accountObjectId,
+              platform: post.platform,
+              postId: post.postId,
+              shortcode: post.shortcode,
+              type: mapScrapedPostType(post.type),
+              caption: post.caption,
+              hashtags: post.hashtags,
+              mentions: post.mentions,
+              mediaUrl: post.mediaUrl,
+              thumbnailUrl: post.thumbnailUrl,
+              postedAt: post.postedAt,
+              likes: post.likes,
+              comments: post.comments,
+              shares: post.shares,
+              saves: post.saves,
+              views: post.views,
+              duration: post.duration,
+              scrapedAt,
+            },
+          },
+          upsert: true,
+        },
+      })),
+      { ordered: false },
+    );
+
+    for (const post of batch) {
+      if (existingPostIds.has(post.postId)) updated++;
+      else inserted++;
+    }
+
+    const saved = Math.min(index + batch.length, posts.length);
+    if (options?.onProgress) {
+      await options.onProgress(saved, posts.length);
+    }
   }
 
   logger.info(`Persisted posts — inserted: ${inserted}, updated: ${updated}`);

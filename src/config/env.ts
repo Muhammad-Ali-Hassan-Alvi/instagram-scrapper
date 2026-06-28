@@ -37,6 +37,9 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .default(false),
   SCRAPE_STALE_HOURS: z.coerce.number().min(1).optional().default(24),
+  APIFY_TOKEN: z.string().min(1).optional(),
+  APIFY_TIKTOK_ACTOR: z.string().min(1).optional(),
+  APIFY_INSTAGRAM_ACTOR: z.string().min(1).optional(),
 });
 
 export type Env = z.infer<typeof envSchema> & {

@@ -123,9 +123,19 @@ async function fillLoginForm(page: Page, username: string, password: string): Pr
 
   const usernameInput = page
     .locator(
-      'input[name="email"], input[name="username"], input[aria-label="Phone number, username, or email"], input[placeholder*="username" i], input[autocomplete="username webauthn"], input[autocomplete="username"]',
+      'input[name="email"], input[name="username"], input[aria-label="Phone number, username, or email"], input[placeholder*="username" i], input[placeholder*="Mobile number" i], input[autocomplete="username webauthn"], input[autocomplete="username"]',
     )
     .first();
+
+  const visible = await usernameInput.isVisible({ timeout: 8000 }).catch(() => false);
+  if (!visible) {
+    const loginLink = page.locator('a[href*="/accounts/login"]').first();
+    if (await loginLink.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await loginLink.click();
+      await page.waitForTimeout(2000);
+      await dismissPostLoginPrompts(page);
+    }
+  }
 
   const passwordInput = page
     .locator(
@@ -144,6 +154,21 @@ async function fillLoginForm(page: Page, username: string, password: string): Pr
   }
 
   await passwordInput.press("Enter");
+}
+
+async function waitForManualInstagramLogin(page: Page, timeoutMs = 180000): Promise<boolean> {
+  logger.info("Complete Instagram login in the browser window (up to 3 minutes)…");
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    await dismissPostLoginPrompts(page);
+    if (await isLoggedIn(page)) {
+      return true;
+    }
+    await page.waitForTimeout(1000);
+  }
+
+  return isLoggedIn(page);
 }
 
 export async function dismissInstagramCheckpoint(page: Page): Promise<void> {
@@ -214,9 +239,27 @@ export async function ensureInstagramLogin(page: Page, context: BrowserContext):
     });
     await page.waitForTimeout(2000);
     await dismissPostLoginPrompts(page);
-    await fillLoginForm(page, INSTAGRAM_USERNAME!, INSTAGRAM_PASSWORD!);
 
-    const loggedIn = await waitForLoginSession(page, INSTAGRAM_EMAIL_CODE);
+    try {
+      await fillLoginForm(page, INSTAGRAM_USERNAME!, INSTAGRAM_PASSWORD!);
+    } catch (formError) {
+      logger.warn(
+        "Instagram login form not found — finish login manually in the browser",
+        formError instanceof Error ? formError.message : formError,
+      );
+      if (await waitForManualInstagramLogin(page)) {
+        await dismissPostLoginPrompts(page);
+        await saveInstagramSession(context);
+        logger.info("Instagram manual login successful");
+        return true;
+      }
+      return false;
+    }
+
+    let loggedIn = await waitForLoginSession(page, INSTAGRAM_EMAIL_CODE);
+    if (!loggedIn) {
+      loggedIn = await waitForManualInstagramLogin(page);
+    }
     if (!loggedIn) {
       if (await isEmailCodeChallenge(page)) {
         logger.warn(

@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:local": "node scripts/dev-local.mjs",
     "dev:clean": "node scripts/clean-dev.mjs",
     "dev:fresh": "node scripts/clean-dev.mjs && next dev",
     "build": "next build",
@@ -18,13 +19,19 @@
     "tiktok:login": "tsx --tsconfig tsconfig.json scripts/tiktok-login-once.ts",
     "tiktok:import-session": "tsx --tsconfig tsconfig.json scripts/import-tiktok-session.ts",
     "tiktok:import-apify": "tsx --tsconfig tsconfig.json scripts/import-apify-tiktok.ts",
+    "tiktok:import-ttcs": "tsx --tsconfig tsconfig.json scripts/import-ttcs-tiktok.ts",
+    "tiktok:ttcs:setup": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-ttcs.ps1",
+    "tiktok:ttcs:discover": "tsx --tsconfig tsconfig.json scripts/tiktok-content-scraper/discover-videos.ts",
+    "scrape:tiktok:ttcs": "tsx --tsconfig tsconfig.json scripts/scrape-tiktok-ttcs.ts",
     "cron": "tsx --tsconfig tsconfig.json scripts/cron-worker.ts",
     "cron:once": "tsx --tsconfig tsconfig.json scripts/cron-once.ts",
+    "data:status": "tsx --tsconfig tsconfig.json scripts/check-data-status.ts",
     "export:all": "tsx --tsconfig tsconfig.json scripts/export-all.ts",
     "sync:session-to-ec2": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-session-to-ec2.ps1 -Ec2Ip 13.48.105.194",
     "deploy:ec2": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy-to-ec2.ps1 -Ec2Ip 13.48.105.194"
   },
   "dependencies": {
+    "apify-client": "^2.23.4",
     "docx": "^9.7.1",
     "dotenv": "^17.4.2",
     "mongodb": "^7.4.0",

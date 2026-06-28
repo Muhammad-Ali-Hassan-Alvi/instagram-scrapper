@@ -14,7 +14,7 @@ import {
   parseTikTokProfileFromPage,
   parseTikTokViewCount,
 } from "./parsers";
-import type { TikTokItemListResponse, TikTokRehydratePayload, TikTokVideoItem } from "./types";
+import type { TikTokItemListResponse, TikTokRehydratePayload, TikTokUserDetailScope, TikTokVideoItem } from "./types";
 
 const SCROLL_SETTLE_MS = 2500;
 const SCROLL_STAGNANT_LIMIT = 5;
@@ -129,20 +129,34 @@ async function clickVideosTab(page: Page): Promise<void> {
 
 async function collectGridPosts(page: Page): Promise<GridPostDraft[]> {
   const rows = await page.evaluate(() => {
-    const items: GridPostDraft[] = [];
+    const items = [];
+    const seen = new Set();
 
     for (const element of document.querySelectorAll("div[data-e2e='user-post-item']")) {
-      const link = element.querySelector("a[href*='/video/']") as HTMLAnchorElement | null;
-      if (!link?.href) continue;
-
-      const match = link.href.match(/\/video\/(\d+)/);
-      if (!match?.[1]) continue;
-
+      const link = element.querySelector("a[href*='/video/']");
+      const href = link?.getAttribute("href");
+      if (!href) continue;
+      const match = href.match(/\/video\/(\d+)/);
+      if (!match || !match[1] || seen.has(match[1])) continue;
+      seen.add(match[1]);
       const viewsEl = element.querySelector("strong[data-e2e='video-views']");
       items.push({
-        videoUrl: link.href,
+        videoUrl: href,
         postId: match[1],
-        viewsText: viewsEl?.textContent?.trim() ?? "0",
+        viewsText: viewsEl && viewsEl.textContent ? viewsEl.textContent.trim() : "0",
+      });
+    }
+
+    for (const link of document.querySelectorAll("a[href*='/video/']")) {
+      const href = link.getAttribute("href");
+      if (!href) continue;
+      const match = href.match(/\/video\/(\d+)/);
+      if (!match || !match[1] || seen.has(match[1])) continue;
+      seen.add(match[1]);
+      items.push({
+        videoUrl: href,
+        postId: match[1],
+        viewsText: "0",
       });
     }
 
@@ -161,48 +175,135 @@ async function scrollToPageBottom(page: Page): Promise<void> {
   });
 }
 
-async function fetchPostsViaItemListApi(
+function mergePostsFromItemList(
+  profile: ScrapedProfile,
+  postsById: Map<string, ScrapedPost>,
+  data: TikTokItemListResponse,
+): void {
+  for (const item of parseTikTokItemListResponse(data)) {
+    const post = parseVideoItem(item, profile);
+    if (post) postsById.set(post.postId, post);
+  }
+}
+
+function mergePostsFromUserDetail(
+  profile: ScrapedProfile,
+  postsById: Map<string, ScrapedPost>,
+  userDetail: TikTokUserDetailScope | null | undefined,
+): void {
+  if (!userDetail) return;
+
+  const itemModule = parseTikTokItemModule(userDetail);
+  for (const item of userDetail.itemList ?? []) {
+    const post = parseVideoItem(item, profile);
+    if (post) postsById.set(post.postId, post);
+  }
+  for (const item of Object.values(itemModule)) {
+    const post = parseVideoItem(item, profile);
+    if (post) postsById.set(post.postId, post);
+  }
+}
+
+async function fetchPostsViaItemListInBrowser(
   page: Page,
   profile: ScrapedProfile,
   secUid: string,
   targetCount: number,
+  signedUrlTemplate: string | null,
 ): Promise<{ posts: ScrapedPost[]; pages: number }> {
   const postsById = new Map<string, ScrapedPost>();
-  let cursor = "0";
-  let hasMore = true;
   let pages = 0;
 
-  while (hasMore && pages < 100) {
-    const params = new URLSearchParams({
+  const result = await page.evaluate(
+    async (args: {
+      secUid: string;
+      username: string;
+      target: number;
+      maxPages: number;
+      template: string | null;
+    }) => {
+      const collected: Array<Record<string, unknown>> = [];
+      let cursor = "0";
+      let hasMore = true;
+      let pageCount = 0;
+      let template = args.template;
+
+      while (hasMore && pageCount < args.maxPages) {
+        let url: string;
+        if (template && pageCount === 0) {
+          url = template;
+        } else if (template) {
+          const parsed = new URL(template);
+          parsed.searchParams.set("cursor", cursor);
+          url = parsed.toString();
+        } else {
+          const params = new URLSearchParams({
+            secUid: args.secUid,
+            count: "35",
+            cursor,
+            coverFormat: "2",
+            needPinnedItemIds: "1",
+            post_item_list_request_type: "0",
+          });
+          url = `${location.origin}/api/post/item_list/?${params.toString()}`;
+        }
+
+        const response = await fetch(url, {
+          credentials: "include",
+          headers: {
+            referer: `${location.origin}/@${args.username}`,
+          },
+        });
+
+        if (!response.ok) {
+          return { items: collected, pages: pageCount, error: `HTTP ${response.status}` };
+        }
+
+        const text = await response.text();
+        if (!text.trim()) {
+          return { items: collected, pages: pageCount, error: "empty response body" };
+        }
+
+        let data: { itemList?: Array<Record<string, unknown>>; hasMore?: boolean; cursor?: string };
+        try {
+          data = JSON.parse(text);
+        } catch {
+          return { items: collected, pages: pageCount, error: "invalid JSON from item_list" };
+        }
+
+        pageCount++;
+        hasMore = Boolean(data.hasMore);
+        if (data.cursor != null) cursor = String(data.cursor);
+        if (data.itemList?.length) {
+          collected.push(...data.itemList);
+        }
+
+        if (args.target > 0 && collected.length >= args.target) break;
+        if ((data.itemList?.length ?? 0) === 0) break;
+
+        await new Promise((resolve) => setTimeout(resolve, 900));
+        template = null;
+      }
+
+      return { items: collected, pages: pageCount, error: null as string | null };
+    },
+    {
       secUid,
-      count: "35",
-      cursor,
-      coverFormat: "2",
-      needPinnedItemIds: "1",
-      post_item_list_request_type: "0",
-    });
-    const url = `${TIKTOK_BASE_URL}/api/post/item_list/?${params.toString()}`;
-    const response = await page.request.get(url, {
-      headers: {
-        referer: `${TIKTOK_BASE_URL}/@${profile.username}`,
-      },
-    });
+      username: profile.username,
+      target: targetCount,
+      maxPages: 100,
+      template: signedUrlTemplate,
+    },
+  );
 
-    if (!response.ok()) break;
+  pages = result.pages;
+  if (result.error && result.items.length === 0) {
+    logger.warn(`@${profile.username}: item_list browser fetch — ${result.error}`);
+  }
 
-    const data = (await response.json()) as TikTokItemListResponse;
-    pages++;
-    hasMore = Boolean(data.hasMore);
-    if (data.cursor != null) cursor = String(data.cursor);
-
-    for (const item of parseTikTokItemListResponse(data)) {
-      const post = parseVideoItem(item, profile);
-      if (post) postsById.set(post.postId, post);
-    }
-
-    if (targetCount > 0 && postsById.size >= targetCount) break;
-    if ((data.itemList?.length ?? 0) === 0) break;
-    await page.waitForTimeout(800);
+  for (const item of result.items) {
+    const post = parseVideoItem(item as TikTokVideoItem, profile);
+    if (post) postsById.set(post.postId, post);
   }
 
   return { posts: [...postsById.values()], pages };
@@ -217,18 +318,19 @@ export class TikTokClient {
 
   async fetchProfile(username: string, category = ""): Promise<ScrapedProfile> {
     await this.page.goto(`${TIKTOK_BASE_URL}/@${username}`, {
-      waitUntil: "networkidle",
+      waitUntil: "domcontentloaded",
       timeout: 90000,
     });
     await this.page.waitForSelector("#__UNIVERSAL_DATA_FOR_REHYDRATION__", {
       state: "attached",
-      timeout: 30000,
+      timeout: 45000,
     });
+    await dismissTikTokOverlays(this.page);
     await this.page
       .locator('[data-e2e="user-page"]')
-      .waitFor({ state: "visible", timeout: 15000 })
+      .waitFor({ state: "visible", timeout: 20000 })
       .catch(() => undefined);
-    await this.page.waitForTimeout(5000);
+    await this.page.waitForTimeout(3000);
 
     const payload = await readRehydrateScope(this.page);
     const scope = payload?.__DEFAULT_SCOPE__?.["webapp.user-detail"] ?? null;
@@ -267,9 +369,15 @@ export class TikTokClient {
     const draftsByUrl = new Map<string, GridPostDraft>();
     let pagesScraped = 0;
     let currentProfile: ScrapedProfile | null = null;
+    let capturedItemListUrl: string | null = null;
 
     const onResponse = async (response: Response) => {
-      if (!response.url().includes("/api/post/item_list")) return;
+      const url = response.url();
+      if (!url.includes("/api/post/item_list")) return;
+
+      if (!capturedItemListUrl && response.ok()) {
+        capturedItemListUrl = url;
+      }
 
       const raw = await response.text().catch(() => "");
       if (raw.length < 20) return;
@@ -277,12 +385,9 @@ export class TikTokClient {
       try {
         const data = JSON.parse(raw) as TikTokItemListResponse;
         pagesScraped++;
-        for (const item of parseTikTokItemListResponse(data)) {
-          const profile = currentProfile;
-          if (!profile) continue;
-          const post = parseVideoItem(item, profile);
-          if (post) postsById.set(post.postId, post);
-        }
+        const profile = currentProfile;
+        if (!profile) return;
+        mergePostsFromItemList(profile, postsById, data);
       } catch {
         // ignore malformed payloads
       }
@@ -295,15 +400,25 @@ export class TikTokClient {
       await dismissTikTokOverlays(this.page);
       await clickVideosTab(this.page);
 
-      if (!loggedIn && currentProfile.totalPosts > 0) {
+      const initialPayload = await readRehydrateScope(this.page);
+      const initialDetail = initialPayload?.__DEFAULT_SCOPE__?.["webapp.user-detail"] ?? null;
+      mergePostsFromUserDetail(currentProfile, postsById, initialDetail);
+
+      if (postsById.size > 0) {
+        logger.info(`@${username}: ${postsById.size} posts from profile page data`);
+      }
+
+      if (!loggedIn && currentProfile.totalPosts > 0 && postsById.size === 0) {
         logger.warn(
-          `@${username}: TikTok may require login to load videos — run npm run tiktok:import-session or npm run tiktok:login`,
+          `@${username}: TikTok may require login to load videos — run npm run tiktok:login (set SCRAPE_HEADLESS=false if captcha appears)`,
         );
       }
 
-      const gridReady = await waitForProfileGrid(this.page, 30000);
+      const gridReady = await waitForProfileGrid(this.page, 45000);
       if (!gridReady) {
-        logger.warn(`@${username}: video grid did not appear — continuing scroll anyway`);
+        logger.warn(
+          `@${username}: video grid did not appear — trying API pagination (set SCRAPE_HEADLESS=false if blocked)`,
+        );
       }
 
       let lastHeight = await this.page.evaluate(() => document.body.scrollHeight);
@@ -319,13 +434,19 @@ export class TikTokClient {
           draftsByUrl.set(draft.videoUrl, draft);
         }
 
-        logger.info(`@${username}: collected ${draftsByUrl.size} unique posts so far`);
+        logger.info(
+          `@${username}: collected ${Math.max(draftsByUrl.size, postsById.size)} unique posts so far`,
+        );
 
+        if (currentProfile.totalPosts > 0 && postsById.size >= currentProfile.totalPosts) {
+          break;
+        }
         if (currentProfile.totalPosts > 0 && draftsByUrl.size >= currentProfile.totalPosts) {
           break;
         }
 
         await scrollToPageBottom(this.page);
+        await this.page.keyboard.press("End").catch(() => undefined);
         await this.page.waitForTimeout(SCROLL_SETTLE_MS);
 
         const newHeight = await this.page.evaluate(() => document.body.scrollHeight);
@@ -348,24 +469,17 @@ export class TikTokClient {
         postsById.set(post.postId, post);
       }
 
-      for (const item of userDetail?.itemList ?? []) {
-        const post = parseVideoItem(item, currentProfile);
-        if (post) postsById.set(post.postId, post);
-      }
-
-      for (const item of Object.values(itemModule)) {
-        const post = parseVideoItem(item, currentProfile);
-        if (post) postsById.set(post.postId, post);
-      }
+      mergePostsFromUserDetail(currentProfile, postsById, userDetail);
 
       const secUid = userDetail?.userInfo?.user?.secUid;
       if (secUid && postsById.size < currentProfile.totalPosts) {
-        logger.info(`@${username}: fetching posts via item_list API fallback…`);
-        const apiResult = await fetchPostsViaItemListApi(
+        logger.info(`@${username}: fetching posts via item_list API (in-browser)…`);
+        const apiResult = await fetchPostsViaItemListInBrowser(
           this.page,
           currentProfile,
           secUid,
           currentProfile.totalPosts,
+          capturedItemListUrl,
         );
         pagesScraped += apiResult.pages;
         for (const post of apiResult.posts) {
@@ -376,6 +490,12 @@ export class TikTokClient {
       const posts = [...postsById.values()].sort(
         (a, b) => b.postedAt.getTime() - a.postedAt.getTime(),
       );
+
+      if (posts.length === 0) {
+        throw new Error(
+          `@${username}: TikTok returned 0 posts — run npm run tiktok:login with SCRAPE_HEADLESS=false, or use npm run tiktok:import-apify`,
+        );
+      }
 
       logger.info(
         `@${username}: finished with ${posts.length} posts (${draftsByUrl.size} from grid, ${pagesScraped} API pages)`,

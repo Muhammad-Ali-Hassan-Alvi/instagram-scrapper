@@ -1,0 +1,142 @@
+{
+  "parsed": {
+    "scopeKeys": [
+      "webapp.app-context",
+      "webapp.biz-context",
+      "webapp.i18n-translation",
+      "seo.abtest",
+      "webapp.user-detail",
+      "webapp.a-b"
+    ],
+    "userInfo": {
+      "uniqueId": "ball5show",
+      "secUid": "MS4wLjABAAAAerOsBuMSLWxW0nnE7NUWrjhN0iCPfUTl08ncYQXCggzlxbtmAibo51fkTUwl3STa",
+      "id": "7478543435042669610",
+      "followerCount": 4437,
+      "videoCount": 147
+    },
+    "itemListLen": 0,
+    "firstItem": null
+  },
+  "hits": [
+    {
+      "url": "https://www.tiktok.com/api/post/item_list/",
+      "status": 200,
+      "ct": "application/json",
+      "bodyLen": 0,
+      "bodyStart": ""
+    },
+    {
+      "url": "https://www.tiktok.com/tiktok/ppf/api/eligibility/v2",
+      "status": 200,
+      "ct": "application/json; charset=utf-8",
+      "bodyLen": 206,
+      "bodyStart": "{\"eligibility_list\":[{\"decision_code\":\"no_br_user\",\"id_value\":\"account_control\",\"is_eligible\":true,\"source\":\"ppf\"}],\"log_pb\":{\"impr_id\":\"2026062805150703706EAF31C0C69C2311\"},\"status_code\":0,\"status_ms"
+    },
+    {
+      "url": "https://www.tiktok.com/api/user/playlist/",
+      "status": 200,
+      "ct": "application/json; charset=utf-8",
+      "bodyLen": 230,
+      "bodyStart": "{\"cursor\":\"0\",\"extra\":{\"fatal_item_ids\":[],\"logid\":\"202606280515047F2637675160AE9D47CD\",\"now\":1782594904000},\"hasMore\":false,\"log_pb\":{\"impr_id\":\"202606280515047F2637675160AE9D47CD\"},\"statusCode\":0,\"s"
+    },
+    {
+      "url": "https://www.tiktok.com/api/story/item_list/",
+      "status": 200,
+      "ct": "application/json; charset=utf-8",
+      "bodyLen": 333,
+      "bodyStart": "{\"AllViewed\":false,\"CurrentPosition\":\"0\",\"HasMoreAfter\":false,\"HasMoreBefore\":false,\"MaxCursor\":\"0\",\"MinCursor\":\"0\",\"TotalCount\":\"0\",\"extra\":{\"fatal_item_ids\":[],\"logid\":\"2026062805150851F4C6EBA863309"
+    },
+    {
+      "url": "https://www.tiktok.com/api/v1/web-cookie-privacy/config",
+      "status": 200,
+      "ct": "application/json; charset=utf-8",
+      "bodyLen": 3186,
+      "bodyStart": "{\"statusCode\":200,\"body\":{\"i18n\":{\"cookieBannerTitle\":\"Allow cookies from TikTok on this browser?\",\"cookieBannerSubTitle\":\"TikTok uses cookies and similar technologies to provide, improve, protect and"
+    },
+    {
+      "url": "https://www.tiktok.com/api/ba/business/suite/permission/list/",
+      "status": 200,
+      "ct": "application/json; charset=utf-8",
+      "bodyLen": 31,
+      "bodyStart": "{\"statusCode\":0,\"statusMsg\":\"\"}"
+    },
+    {
+      "url": "https://www.tiktok.com/api/ba/business/suite/permission/list/",
+      "status": 200,
+      "ct": "application/json; charset=utf-8",
+      "bodyLen": 31,
+      "bodyStart": "{\"statusCode\":0,\"statusMsg\":\"\"}"
+    },
+    {
+      "url": "https://www.tiktok.com/api/inbox/notice_count/",
+      "status": 400,
+      "ct": "application/json; charset=utf-8",
+      "bodyLen": 129,
+      "bodyStart": "{\"log_pb\":{\"impr_id\":\"20260628051517F977BF6604B5C79C972C\"},\"statusCode\":10202,\"statusMsg\":\"\",\"status_code\":10202,\"status_msg\":\"\"}"
+    },
+    {
+      "url": "https://www.tiktok.com/api/user/list/",
+      "status": 200,
+      "ct": "application/json; charset=utf-8",
+      "bodyLen": 54255,
+      "bodyStart": "{\"extra\":{\"fatal_item_ids\":[],\"logid\":\"20260628051517FEB253F29501749F3DB1\",\"now\":1782594917000},\"hasMore\":false,\"log_pb\":{\"impr_id\":\"20260628051517FEB253F29501749F3DB1\"},\"minCursor\":0,\"statusCode\":0,\""
+    },
+    {
+      "url": "https://www.tiktok.com/api/user/collection_list/",
+      "status": 200,
+      "ct": "application/json; charset=utf-8",
+      "bodyLen": 240,
+      "bodyStart": "{\"cursor\":\"0\",\"extra\":{\"fatal_item_ids\":[],\"logid\":\"20260628051517A2BB54A271CEC69D09E9\",\"now\":1782594917000},\"hasMore\":false,\"log_pb\":{\"impr_id\":\"20260628051517A2BB54A271CEC69D09E9\"},\"statusCode\":0,\"s"
+    },
+    {
+      "url": "https://www.tiktok.com/api/ba/business/suite/permission/list/",
+      "status": 200,
+      "ct": "application/json; charset=utf-8",
+      "bodyLen": 31,
+      "bodyStart": "{\"statusCode\":0,\"statusMsg\":\"\"}"
+    },
+    {
+      "url": "https://www.tiktok.com/api/repost/item_list/",
+      "status": 200,
+      "ct": "application/json",
+      "bodyLen": 0,
+      "bodyStart": ""
+    },
+    {
+      "url": "https://www.tiktok.com/api/global-footer/graphql",
+      "status": 200,
+      "ct": "application/json; charset=utf-8",
+      "bodyLen": 58735,
+      "bodyStart": "{\"data\":{\"countryListReference\":{\"countryList\":\"{\\\"US\\\":\\\"us\\\",\\\"BE\\\":\\\"eu\\\",\\\"BG\\\":\\\"eu\\\",\\\"HR\\\":\\\"eu\\\",\\\"CH\\\":\\\"eu\\\",\\\"CY\\\":\\\"eu\\\",\\\"CZ\\\":\\\"eu\\\",\\\"DK\\\":\\\"eu\\\",\\\"EE\\\":\\\"eu\\\",\\\"FI\\\":\\\"eu\\\",\\\"FR\\\":\\\"eu"
+    },
+    {
+      "url": "https://www.tiktok.com/api/global-footer/graphql",
+      "status": 200,
+      "ct": "application/json; charset=utf-8",
+      "bodyLen": 11962,
+      "bodyStart": "{\"data\":{\"footer\":{\"logo\":null,\"languageSelector\":null,\"sys\":{\"publishedLanguages\":[\"sq\",\"ar\",\"az\",\"bn-IN\",\"bg\",\"my\",\"ca\",\"ceb\",\"zh-Hans\",\"zh-Hant\",\"hr\",\"cs\",\"da\",\"nl\",\"en\",\"en-GB\",\"et\",\"fil\",\"fi\",\"fr"
+    },
+    {
+      "url": "https://www.tiktok.com/api/prefetch/explore/item_list/",
+      "status": 200,
+      "ct": "application/json; charset=utf-8",
+      "bodyLen": 201,
+      "bodyStart": "{\"extra\":{\"fatal_item_ids\":[],\"logid\":\"20260628051521F977BF6604B5C79C9882\",\"now\":1782594921000},\"log_pb\":{\"impr_id\":\"20260628051521F977BF6604B5C79C9882\"},\"statusCode\":0,\"status_code\":0,\"status_msg\":\"\""
+    },
+    {
+      "url": "https://www.tiktok.com/api/share/settings/",
+      "status": 200,
+      "ct": "application/json; charset=utf-8",
+      "bodyLen": 726,
+      "bodyStart": "{\"extra\":{\"fatal_item_ids\":[],\"logid\":\"20260628051524F977BF6604B5C79C99DA\",\"now\":1782594924000},\"log_pb\":{\"impr_id\":\"20260628051524F977BF6604B5C79C99DA\"},\"share_platforms\":[{\"platform_id\":\"repost\",\"pl"
+    },
+    {
+      "url": "https://www.tiktok.com/node-webapp/api/login-config",
+      "status": 200,
+      "ct": "application/json; charset=utf-8",
+      "bodyLen": 856,
+      "bodyStart": "{\"statusCode\":0,\"config\":{\"emailSuffixConfig\":[\"gmail.com\",\"hotmail.com\",\"outlook.com\",\"yahoo.com\",\"icloud.com\"],\"platformConfig\":{\"show_num\":2,\"order\":\"FACEBOOK,GOOGLE,APPLE,INSTAGRAM\"},\"platformConf"
+    }
+  ]
+}

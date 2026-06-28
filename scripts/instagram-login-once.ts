@@ -8,6 +8,7 @@ import { ensureInstagramLogin } from "../src/playwright/instagram-auth";
 import { logger } from "../src/utils/logger";
 
 config({ path: ".env.local", override: true });
+process.env.SCRAPE_HEADLESS = "false";
 
 async function main(): Promise<void> {
   const session = await createInstagramBrowserSession();

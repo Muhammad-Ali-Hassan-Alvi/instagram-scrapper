@@ -39,15 +39,22 @@ export function ScrapeStatusBanner({
         </ul>
       )}
       <p className="mt-2 text-xs text-amber-800">
-        The dashboard reads saved MongoDB data only. Run scraping in a <strong>separate terminal</strong>{" "}
-        (not inside <code className="rounded bg-amber-100 px-1">npm run dev</code>):
+        The dashboard reads saved MongoDB data only. For local use, run{" "}
+        <code className="rounded bg-amber-100 px-1">npm run dev:local</code> (dashboard + automatic
+        daily scraper). Or scrape manually in a separate terminal:
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
+        <code className="rounded bg-amber-100 px-2 py-2 text-xs text-amber-950">
+          npm run dev:local
+        </code>
         <code className="rounded bg-amber-100 px-2 py-2 text-xs text-amber-950">
           npm run scrape:instagram
         </code>
         <code className="rounded bg-amber-100 px-2 py-2 text-xs text-amber-950">
           npm run scrape:tiktok
+        </code>
+        <code className="rounded bg-amber-100 px-2 py-2 text-xs text-amber-950">
+          npm run scrape:tiktok:ttcs
         </code>
         <code className="rounded bg-amber-100 px-2 py-2 text-xs text-amber-950">
           npm run tiktok:import-apify

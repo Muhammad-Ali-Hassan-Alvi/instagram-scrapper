@@ -7,7 +7,8 @@ async function main(): Promise<void> {
     logger.warn("Scrape skipped");
     process.exit(0);
   }
-  logger.info(`Done — ${result.csv.rowCount} rows exported`);
+  const rowCount = result.instagram.csv.rowCount;
+  logger.info(`Done — ${rowCount} rows exported (Instagram + TikTok)`);
 }
 
 main().catch((error) => {
