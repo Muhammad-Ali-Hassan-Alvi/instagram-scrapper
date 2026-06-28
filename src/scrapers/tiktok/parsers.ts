@@ -7,10 +7,7 @@ export {
   randomDelay,
 } from "@/scrapers/instagram/parsers";
 
-export function parseTikTokProfileFromPage(
-  scope: TikTokUserDetailScope | null,
-  _category: string,
-): {
+export function parseTikTokProfileFromPage(scope: TikTokUserDetailScope | null): {
   accountId: string;
   username: string;
   displayName: string;

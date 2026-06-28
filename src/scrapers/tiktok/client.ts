@@ -334,7 +334,7 @@ export class TikTokClient {
 
     const payload = await readRehydrateScope(this.page);
     const scope = payload?.__DEFAULT_SCOPE__?.["webapp.user-detail"] ?? null;
-    const parsed = parseTikTokProfileFromPage(scope, category);
+    const parsed = parseTikTokProfileFromPage(scope);
 
     if (!parsed) {
       throw new Error(`Failed to load TikTok profile for @${username}`);

@@ -218,7 +218,7 @@ export async function markRemainingAccountsSkipped(
 
   for (const account of DEFAULT_TARGET_ACCOUNTS.slice(startIndex + 1)) {
     const key = accountKey(account);
-    let index = runs.findIndex((run) => accountKey(run) === key);
+    const index = runs.findIndex((run) => accountKey(run) === key);
 
     if (index === -1) {
       runs.push({
