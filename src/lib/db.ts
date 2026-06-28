@@ -36,8 +36,13 @@ async function ensureAccountIndexes(): Promise<void> {
  * Reuses the existing connection during Next.js hot reloads.
  */
 export async function connectDB(): Promise<typeof mongoose> {
-  if (cached.conn) {
+  if (cached.conn && mongoose.connection.readyState === 1) {
     return cached.conn;
+  }
+
+  if (cached.conn && mongoose.connection.readyState !== 1) {
+    cached.conn = null;
+    cached.promise = null;
   }
 
   if (!cached.promise) {
@@ -45,18 +50,24 @@ export async function connectDB(): Promise<typeof mongoose> {
 
     cached.promise = mongoose
       .connect(MONGODB_URI, {
-        serverSelectionTimeoutMS: 15000,
+        serverSelectionTimeoutMS: 30000,
+        maxPoolSize: 10,
+        socketTimeoutMS: 45000,
       })
       .then((mongooseInstance) => {
-        logger.info("MongoDB connected successfully");
+        const databaseName = mongooseInstance.connection.db?.databaseName ?? "unknown";
+        logger.info(`MongoDB connected successfully (database: ${databaseName})`);
         return mongooseInstance;
       });
   }
 
   try {
     cached.conn = await cached.promise;
-    await ensureAccountIndexes();
+    if (process.env.NODE_ENV === "development") {
+      await ensureAccountIndexes();
+    }
   } catch (error) {
+    cached.conn = null;
     cached.promise = null;
     logger.error("MongoDB connection failed", error);
     throw error;
